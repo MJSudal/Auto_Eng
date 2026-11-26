@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>영어 문장 배열 게임</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
   --bg:#f1f2ee; --surface:#fff; --ink:#15201b; --muted:#59645d;
@@ -182,6 +183,90 @@ input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(
 
 @media(max-width:760px){.setup-grid{grid-template-columns:1fr}.add-sentence-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.word-chip{font-size:16px;padding:8px 11px}.turn-name{font-size:22px}}
+
+/* ===== 앱 스타일: 밝은 회색 바탕 + 흰 카드 + 파란 포인트 하나 ===== */
+:root{--bg:#f2f4f6;--ink:#191f28;--muted:#6b7684;--line:#e5e8eb;--line-strong:#d1d6db;
+  --board:#3182f6;--board-ink:#fff;--chalk:#fff;--primary:#3182f6;--primary-d:#1b64da;--tint:#e8f3ff;
+  --danger:#f04452;--danger-bg:#ffeeee;--ok:#03b26c;--ok-bg:#e6f8f0;--focus:#3182f6;--r-panel:20px;--r-ctl:14px}
+body{background:var(--bg);color:var(--ink)}
+.app{padding-top:28px}
+.topbar{border-bottom:0;padding-bottom:6px}
+h1{font-weight:800;letter-spacing:-.03em}
+h2{font-size:20px;font-weight:700}
+.card{border:0;box-shadow:none;border-radius:var(--r-panel)}
+.field h2,.section-heading{border:0;padding-bottom:0}
+.section-heading::after{display:none}
+.section-heading{font-size:18px;font-weight:700}
+
+.btn,.primary,.danger,.green,.blue,.btn-primary,.btn-action{
+  border:0;min-height:52px;padding:12px 22px;font-weight:600;font-size:16px;background:var(--primary);color:#fff}
+.primary:hover,.blue:hover,.btn-primary:hover,.btn-action:hover{background:var(--primary-d)}
+.secondary,.btn-secondary{border:0;background:var(--tint);color:var(--primary-d)}
+.secondary:hover,.btn-secondary:hover{background:#d4e8ff}
+.icon-btn{border:0;min-height:40px;padding:8px 14px;background:#fff;color:#4e5968;font-weight:600;font-size:14px}
+.icon-btn:hover{background:#e5e8eb}
+.danger{background:var(--danger)}.danger:hover{background:#d93644}
+.green{background:var(--ok)}.green:hover{background:#02a161}
+.btn-primary,.start{min-height:58px;font-size:18px;border-radius:16px}
+
+input,select,textarea{background:#f2f4f6;border:1px solid transparent;border-radius:12px}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(49,130,246,.18)}
+input[type=color]{padding:4px}
+label{color:#4e5968}
+
+.badge{background:var(--tint);color:var(--primary-d)}
+.choice-chip span{border:0;background:#f2f4f6;color:#4e5968;border-radius:12px;font-weight:600}
+.choice-chip:hover span{background:#e5e8eb}
+.choice-chip input:checked + span,.choice-chip:hover input:checked + span{background:var(--primary);color:#fff}
+.toggle-card{border:0;background:#f2f4f6}
+.toggle-card:hover{background:#eceff2}
+.toggle-slider{background:#d1d6db}
+.toggle-switch input:checked + .toggle-slider{background:var(--primary)}
+.time-range-container{border:0;background:#f2f4f6}
+.time-range-container input{background:#fff}
+.card>h2{margin-bottom:18px}
+
+.turn-box{background:var(--tint);color:var(--ink)}
+.turn-box small,.next-up-hint{color:#4e5968}
+.turn-display{background:var(--primary);color:#fff}
+.topic-display{background:#fff;color:var(--ink);border:0}
+.topic-display #topicText{color:var(--primary-d)}
+.word-zone,.prompt-card{background:var(--primary);color:#fff}
+.prompt-label{color:rgba(255,255,255,.82)}
+.prompt-word,.prompt-kr{color:#fff}
+.next-letter{background:#fff;color:var(--primary-d)}
+.type-badge{border:0;background:rgba(255,255,255,.2);color:#fff}
+
+.stat,.stat-box{border:0;background:#f2f4f6}
+.stat.warning,.stat-box.warning{background:var(--danger-bg)}
+.score-row,.score-chip{border:0;background:#f2f4f6}
+.score-row.current,.score-chip.current{background:var(--tint);box-shadow:inset 0 0 0 2px var(--primary)}
+.survivor-chip{border:0;background:#fff}
+.survivor-chip.current-turn{box-shadow:inset 0 0 0 2px var(--primary)}
+.score-badge,.chip,.dict-chip,.history-item{background:#f2f4f6;border:0}
+.score-badge{background:#fff}
+.message{background:#f2f4f6;color:#4e5968}
+.message.success{background:var(--ok-bg);color:#029359}
+.message.error{background:var(--danger-bg);color:#d93644}
+
+#wordBank{background:#f2f4f6;border:0}
+#answerZone{background:var(--tint);border:2px dashed #9ec7fb}
+#answerZone.drag-over,#wordBank.drag-over{background-color:#d4e8ff;border-color:var(--primary)}
+.word-chip{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(25,31,40,.06)}
+.word-chip:hover{border-color:var(--primary)}
+#answerZone .word-chip{background:var(--primary);border-color:var(--primary);color:#fff}
+.bank-row,.bulk-add{border:0;background:#f2f4f6}
+.bulk-add code{background:#fff;border:0}
+.bank-type-badge.q{color:var(--primary-d);border-color:transparent;background:var(--tint)}
+.bank-type-badge.pos{border-color:transparent}.bank-type-badge.neg{border-color:transparent}
+.final-row{border:0;background:#f2f4f6}
+.final-row.winner{background:var(--tint);box-shadow:inset 0 0 0 2px var(--primary)}
+.modal,.pause-modal,.pause-card{border:0}
+.danger-text{background:#fff0f0;color:var(--danger);border:0}
+.danger-text:hover{background:#ffe0e0}
+.explosion-overlay .btn-action{background:#fff;color:var(--ink)}
+.explosion-overlay .btn-secondary{background:rgba(255,255,255,.18);color:#fff}
+.explosion-overlay .btn-secondary:hover{background:rgba(255,255,255,.28)}
 </style>
 </head>
 <body>
