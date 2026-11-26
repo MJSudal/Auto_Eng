@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>째깍째깍 폭탄 돌리기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+:root{
+  --bg:#f1f2ee; --surface:#fff; --ink:#15201b; --muted:#59645d;
+  --line:#d8dcd5; --line-strong:#b4bcb2;
+  --board:#1c3a33; --board-ink:#f3f1e7; --chalk:#f1c24b;
+  --danger:#c4352b; --danger-bg:#fbeceb; --ok:#1d7a4b; --ok-bg:#e6f3ec;
+  --focus:#2f6fdc;
+  --r-panel:12px; --r-ctl:8px;
+  --font:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;
+  -webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.hidden{display:none!important}
+h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.25}
+h1{font-size:clamp(22px,3.2vw,28px);font-weight:700}
+h2{font-size:18px;font-weight:700;margin-bottom:12px}
+h3{font-size:16px;font-weight:700;margin-bottom:10px}
+.screen{display:none}.screen.active{display:block}
+.app{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:20px 0 56px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:0 0 16px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 버튼: 평평한 면, 눌렀을 때만 살짝 가라앉음 */
+.btn,.primary,.secondary,.danger,.green,.blue,.icon-btn,
+.btn-primary,.btn-secondary,.btn-action{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:10px 18px;border-radius:var(--r-ctl);
+  border:1px solid var(--ink);background:var(--ink);color:#fff;font-weight:600;font-size:15px;
+  transition:background-color .15s,border-color .15s,transform .08s}
+.btn:active,.primary:active,.danger:active,.green:active,.blue:active,
+.btn-primary:active,.btn-secondary:active,.btn-action:active,.secondary:active,.icon-btn:active{transform:translateY(1px)}
+.primary:hover,.btn-primary:hover,.btn-action:hover,.blue:hover{background:var(--board);border-color:var(--board)}
+.secondary,.icon-btn,.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.secondary:hover,.icon-btn:hover,.btn-secondary:hover{background:#f6f7f4;border-color:var(--ink)}
+.danger{background:var(--danger);border-color:var(--danger)}
+.danger:hover{background:#a52b22;border-color:#a52b22}
+.green{background:var(--ok);border-color:var(--ok)}
+.green:hover{background:#166039;border-color:#166039}
+.btn-primary,.start{min-height:52px;font-size:17px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 면(패널) */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-panel);padding:22px}
+.field{padding:0}
+.field.full{grid-column:1/-1}
+label{display:block;font-weight:600;font-size:14px;color:var(--ink);margin:0 0 6px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:var(--r-ctl);
+  border:1px solid var(--line-strong);background:var(--surface);font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px rgba(47,111,220,.18)}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(--ink)}
+.help,.help-text{margin-top:8px;color:var(--muted);font-size:14px;line-height:1.6}
+.rules{margin:0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.75}
+
+.badge{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  background:var(--ink);color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+.player-list,.player-setup{display:grid;gap:8px;margin-top:12px}
+.player-row{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+
+/* 모달 */
+.overlay,.pause-overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(14,22,18,.6)}
+.overlay.show,.pause-overlay.show{display:flex}
+.modal,.pause-modal,.pause-card{width:min(440px,100%);padding:28px;border-radius:var(--r-panel);
+  background:var(--surface);border:1px solid var(--line);text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.modal p,.pause-modal p,.pause-card p{color:var(--muted);margin:8px 0 20px}
+.modal h2{font-size:24px;margin-bottom:6px}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+
+.brand p{max-width:60ch}
+.card{max-width:760px;margin:0 auto;padding:28px}
+.icon-btn{min-width:44px;padding:8px 14px}
+
+.setting-group{margin-bottom:22px}
+.section-heading{display:flex;align-items:center;gap:12px;margin:30px 0 14px;font-size:16px;font-weight:700}
+.section-heading:first-of-type{margin-top:0}
+.section-heading::after{content:"";flex:1;height:1px;background:var(--line)}
+.player-row{grid-template-columns:auto 1fr auto}
+.player-row select.emoji-select{width:64px;padding:8px 4px;text-align:center;font-size:20px}
+input[type=color]{width:48px;min-height:44px;padding:3px;cursor:pointer}
+.time-range-container{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:14px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--bg)}
+.time-range-container input{width:80px;text-align:center;font-weight:700}
+
+.toggle-card{display:flex;align-items:center;gap:14px;padding:12px 14px;margin:0 0 10px;cursor:pointer;
+  border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--surface);font-weight:400}
+.toggle-card:hover{border-color:var(--line-strong)}
+.toggle-card .toggle-text{flex:1;font-weight:600;line-height:1.4}
+.toggle-card .toggle-text small{display:block;font-weight:400;color:var(--muted);margin-top:2px;font-size:13px}
+.toggle-switch{position:relative;width:46px;height:26px;flex-shrink:0}
+.toggle-switch input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;cursor:pointer}
+.toggle-slider{position:absolute;inset:0;background:var(--line-strong);border-radius:999px;transition:background-color .15s;pointer-events:none}
+.toggle-slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .15s}
+.toggle-switch input:checked + .toggle-slider{background:var(--ink)}
+.toggle-switch input:checked + .toggle-slider::before{transform:translateX(20px)}
+.toggle-switch input:focus-visible + .toggle-slider{outline:3px solid var(--focus);outline-offset:2px}
+.btn-primary{display:flex;width:100%;margin-top:28px}
+
+/* ---- 게임 화면 ---- */
+.game-container{max-width:760px;margin:0 auto;text-align:center;position:relative}
+.survivor-list{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:14px}
+.survivor-chip{padding:5px 12px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);font-size:14px;font-weight:600}
+.survivor-chip.eliminated{opacity:.45;text-decoration:line-through}
+.survivor-chip.current-turn{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.topic-display{display:block;padding:14px 20px;margin-bottom:12px;border:1px solid var(--line);border-radius:var(--r-panel);
+  background:var(--board);color:var(--board-ink);font-size:clamp(22px,4vw,32px);font-weight:700;letter-spacing:-.01em}
+.topic-display #topicText{color:var(--chalk)}
+.turn-display{padding:18px 20px;border-radius:var(--r-panel);background:var(--ink);color:#fff;
+  font-size:clamp(28px,5.5vw,44px);font-weight:700;letter-spacing:-.02em;margin:0}
+.next-up-hint{min-height:24px;margin:8px 0 0;color:var(--muted);font-size:15px}
+.bomb-area{display:flex;justify-content:center;align-items:center;height:clamp(220px,34vh,300px);margin:8px 0}
+.bomb{width:clamp(150px,24vw,210px);line-height:0;transition:transform .1s;transform-origin:50% 60%}
+.bomb svg{width:100%;height:auto;display:block}
+.bomb .spark{animation:spark .6s steps(2,jump-none) infinite}
+@keyframes spark{0%{opacity:1}100%{opacity:.25}}
+.vibrating{animation:fast-vibrate .1s infinite}
+@keyframes fast-vibrate{
+  0%{transform:translate(0,0) scale(1.12)}25%{transform:translate(-3px,3px) scale(1.12)}
+  50%{transform:translate(3px,-3px) scale(1.12)}75%{transform:translate(-3px,-3px) scale(1.12)}
+  100%{transform:translate(3px,3px) scale(1.12)}}
+.controls{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+.btn-action{min-height:60px;padding:12px 36px;font-size:20px}
+.btn-secondary{min-height:60px;padding:12px 24px;font-size:17px}
+#pauseBtn{min-height:44px;font-size:15px}
+
+.pause-card{padding:32px}
+.pause-card h2{font-size:22px}
+
+/* 폭발 */
+@keyframes violent-shake{
+  0%{transform:translate(4px,4px)}10%{transform:translate(-10px,-8px)}20%{transform:translate(-12px,6px)}
+  30%{transform:translate(9px,12px)}40%{transform:translate(7px,-9px)}50%{transform:translate(-6px,14px)}
+  60%{transform:translate(-14px,3px)}70%{transform:translate(12px,6px)}80%{transform:translate(-3px,-6px)}
+  90%{transform:translate(6px,13px)}100%{transform:translate(0,0)}}
+.violent-shake-screen{animation:violent-shake .6s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes gentle-shake{0%{transform:translate(0,0)}25%{transform:translate(-5px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}100%{transform:translate(0,0)}}
+.gentle-shake-screen{animation:gentle-shake .5s ease both}
+.explosion-overlay{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:20px;padding:20px;opacity:0;pointer-events:none;color:#fff}
+.explosion-overlay.show{opacity:1;pointer-events:all;animation:explode-flash 1s forwards}
+@keyframes explode-flash{0%{background:#fff}20%{background:var(--chalk)}100%{background:var(--danger)}}
+.explosion-overlay.show.soft-flash{animation:explode-flash-soft 2s ease-out forwards}
+@keyframes explode-flash-soft{0%{background:#f3e7e5}100%{background:#a8453d}}
+.boom-text{margin:0;font-size:clamp(88px,16vw,168px);font-weight:800;letter-spacing:-.04em;line-height:1;color:#fff;
+  animation:pop-in .4s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop-in{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.loser-text,.winner-text{margin:0;padding:12px 28px;border-radius:var(--r-panel);background:rgba(0,0,0,.28);
+  font-size:clamp(22px,4.5vw,36px);font-weight:700}
+.winner-text{background:var(--chalk);color:var(--ink)}
+.result-actions{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.explosion-overlay .btn-action{background:#fff;color:var(--ink);border-color:#fff}
+.explosion-overlay .btn-action:hover{background:var(--bg);border-color:var(--bg)}
+.explosion-overlay .btn-secondary{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.explosion-overlay .btn-secondary:hover{background:rgba(255,255,255,.12);border-color:#fff}
+@media(max-width:560px){.card{padding:20px}.btn-action,.btn-secondary{width:100%}}
+</style>
+</head>
+<body>
+
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>째깍째깍 폭탄 돌리기</h1>
+        <p>단어를 외치고 폭탄을 넘기세요! (Space Bar로 넘기기 · P키로 일시정지)</p>
+      </div>
+      <button class="icon-btn" id="muteBtn" onclick="toggleMute()" title="소리 켜기/끄기">소리 켬</button>
+    </header>
+
+    <section id="setupScreen" class="screen active">
+      <div class="card">
+        <h2>게임 환경 설정</h2>
+
+        <div class="section-heading">타이머 방식</div>
+        <div class="setting-group">
+          <label>폭파 방식</label>
+          <select id="timerMode">
+            <option value="auto">자동 폭파 (설정한 범위 내에서 매번 무작위로 터짐)</option>
+            <option value="manual">수동 폭파 (B키를 누르면 아래 설정된 시간 뒤에 터짐)</option>
+          </select>
+          <span class="help-text">수동일 땐 선생님이 언제든 B(Boom) 키를 눌러 폭파시킬 수 있습니다.</span>
+        </div>
+
+        <div class="setting-group" id="autoTimeSetting">
+          <label>자동 폭파 시간 범위 (초)</label>
+          <div class="time-range-container">
+            최소 <input type="number" id="minTimeInput" value="15" min="8" max="100" style="width: 80px;"> 초
+            <span style="font-weight: 900; font-size: 20px; color: var(--muted); margin: 0 10px;">~</span>
+            최대 <input type="number" id="maxTimeInput" value="40" min="10" max="300" style="width: 80px;"> 초
+          </div>
+          <span class="help-text">이 범위 사이에서 몰래 랜덤으로 폭발 시간이 결정됩니다. 가짜 경고음이 불규칙하게 섞여 예측할 수 없습니다. (최소 8초 이상을 권장합니다 - 너무 짧으면 저학년 아이들이 답하기 어려워요)</span>
+        </div>
+
+        <div class="setting-group" id="bTimeSetting">
+          <label>선생님 개입(B키) 카운트다운 시간 (초)</label>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="number" id="bTimeInput" value="10" min="1" max="60" style="width: 100px; text-align: center; font-weight: 900; color: var(--danger);"> 초
+          </div>
+          <span class="help-text">게임 중 언제든 B키를 누르면, 설정된 이 시간에 맞춰 '진짜 패닉' 카운트다운에 돌입한 뒤 폭발합니다.</span>
+        </div>
+
+        <div class="section-heading">게임 방식 옵션</div>
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="toggle-card" for="eliminationMode">
+            <div class="toggle-switch">
+              <input type="checkbox" id="eliminationMode">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="toggle-text">서바이벌 모드
+              <small>터진 사람은 탈락하고, 마지막 1명이 남을 때까지 진행해요.</small>
+            </span>
+          </label>
+          <label class="toggle-card" for="lowStimMode">
+            <div class="toggle-switch">
+              <input type="checkbox" id="lowStimMode">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="toggle-text">저자극 모드
+              <small>화면 번쩍임·흔들림과 폭발음을 부드럽게 줄여요. 빛/소리에 예민한 아이와 함께할 때 추천!</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="section-heading">참여 인원 (최대 8명)</div>
+        <div class="setting-group">
+          <select id="playerCount">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+            <option value="7">7명</option>
+            <option value="8">8명</option>
+          </select>
+          <div id="playerInputs" class="player-setup"></div>
+        </div>
+        
+        <button class="btn-primary" onclick="startGame()">게임 시작하기</button>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="game-container">
+        <div id="survivorList" class="survivor-list"></div>
+
+        <div class="topic-display">주제: <span id="topicText"></span></div>
+        <div class="turn-display" id="turnDisplay">플레이어 1 차례!</div>
+        <div class="next-up-hint" id="nextUpHint"></div>
+        
+        <div class="bomb-area">
+          <div class="bomb" id="bombIcon"><svg viewBox="0 0 200 220" role="img" aria-label="폭탄"><circle cx="100" cy="134" r="72" fill="#15201b"/><ellipse cx="74" cy="108" rx="16" ry="11" fill="#fff" opacity=".14" transform="rotate(-30 74 108)"/><rect x="86" y="44" width="28" height="26" rx="4" fill="#3b4943"/><path d="M100 44 C100 26 122 24 136 12" stroke="#15201b" stroke-width="6" fill="none" stroke-linecap="round"/><circle class="spark" cx="140" cy="10" r="8" fill="#f1c24b"/></svg></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn-secondary" onclick="changeTopic()">주제 바꾸기</button>
+          <button class="btn-action" onclick="passTurn()">통과! (Space)</button>
+        </div>
+        <div class="controls" style="margin-top: 12px;">
+          <button class="btn-secondary" id="pauseBtn" onclick="togglePause()">일시정지</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pauseOverlay" class="pause-overlay">
+    <div class="pause-card">
+      <h2>일시정지됨</h2>
+      <p>폭탄 타이머가 멈춰 있어요. 준비되면 다시 시작하세요.</p>
+      <button class="btn-action" onclick="togglePause()">계속하기</button>
+    </div>
+  </div>
+
+  <div class="explosion-overlay" id="explosionOverlay">
+    <h1 class="boom-text">BOOM!</h1>
+    <div class="loser-text" id="loserText">플레이어 탈락</div>
+    <div class="winner-text" id="winnerText" style="display:none;">우승!</div>
+    <div class="result-actions" id="resultActions">
+      <button class="btn-action" onclick="restartGame()">같은 순서로 재시작</button>
+      <button class="btn-secondary" onclick="resetToSetup()">홈 화면으로</button>
+    </div>
+  </div>
+
+  <script>
+    const TOPICS = [
+      "Animals (동물)", "Colors (색깔)", "Fruits (과일)", "Food (음식)",
+      "Body Parts (몸의 일부)", "Clothes (옷)", "Numbers 1~10 (숫자)", 
+      "Things in Classroom (교실에 있는 것)", "Things in House (집에 있는 것)",
+      "Vehicles (탈것)", "Sports (운동)", "Toys (장난감)", "Vegetables (채소)",
+      "Musical Instruments (악기)", "Weather (날씨)", "Seasons (계절)", 
+      "Feelings (감정)", "Shapes (모양)", "Playground (놀이터에 있는 것)",
+      "Things in the Sky (하늘에 있는 것)", "Sea Animals (바다 생물)", 
+      "Things that fly (날아다니는 것)", "Fast things (빠른 것)", "Slow things (느린 것)",
+      "Round things (둥근 것)", "Red things (빨간색인 것)", "Yellow things (노란색인 것)", 
+      "Blue things (파란색인 것)", "Green things (초록색인 것)", "Hot things (뜨거운 것)", 
+      "Cold things (차가운 것)", "Sweet things (단맛이 나는 것)", 
+      "Morning routines (아침에 하는 일)", "Bedtime routines (자기 전에 하는 일)", 
+      "School supplies (학용품)", "Family members (가족)", "Jobs (직업)", 
+      "Bugs (벌레)", "Drinks (마실 것)", "Things in a Supermarket (마트에 있는 것)",
+      "Things in a Park (공원에 있는 것)", "Things with wheels (바퀴가 있는 것)",
+      "Things you can read (읽을 수 있는 것)", "Things you eat for breakfast (아침으로 먹는 것)",
+      "Things that are loud (소리가 큰 것)", "Things that are quiet (소리가 작은/조용한 것)",
+      "Things that are soft (부드러운 것)", "Things that are hard (딱딱한 것)",
+      "Things in a Bathroom (욕실에 있는 것)", "Things in a Kitchen (주방에 있는 것)",
+      "Things that make you happy (나를 기분 좋게 하는 것)", "Sour things (신맛이 나는 것)",
+      "Salty things (짠맛이 나는 것)", "Things that are heavy (무거운 것)",
+      "Things that are light (가벼운 것)", "Things you wear on your head (머리에 쓰는 것)",
+      "Things you wear on your feet (발에 신는 것)", "Things you can open (열 수 있는 것)",
+      "Things you can close (닫을 수 있는 것)", "Things that glow/shine (빛나는 것)",
+      "Things that are sticky (끈적거리는 것)", "Things you find in a bag (가방에 있는 것)",
+      "Things that are black (검은색인 것)", "Things that are white (흰색인 것)",
+      "Things with a tail (꼬리가 있는 것)", "Things you can catch (잡을 수 있는 것)",
+      "Things you can throw (던질 수 있는 것)", "Things you can push (밀 수 있는 것)",
+      "Things you can pull (당길 수 있는 것)", "Things you use to clean (청소할 때 쓰는 것)",
+      "Things you see at night (밤에 볼 수 있는 것)", "Things that smell good (냄새가 좋은 것)",
+      "Things you do in the weekend (주말에 하는 일)", "Things you play with friends (친구와 노는 것)",
+      "Things that are long (긴 것)", "Things that are short (짧은 것)",
+      "Things you write with (글씨를 쓸 때 쓰는 것)", "Things made of paper (종이로 만든 것)"
+    ];
+
+    const DEFAULT_COLORS = ["#c4473e", "#c98a12", "#4f8a36", "#2c64a8", "#7250a0", "#cf6f2e", "#a83d68", "#25807b"];
+    const AVATAR_EMOJIS = ["🦊","🐻","🐰","🐼","🦁","🐯","🐸","🐵","🐱","🐶","🦄","🐨","🐷","🐔","🦉","🐙"];
+    const DEFAULT_AVATARS = ["🦊","🐻","🐰","🐼","🦁","🐯","🐸","🐵"];
+    
+    let players = [];
+    let currentPlayerIndex = 0;
+    let timerId = null;
+    let tickId = null;
+    let totalTime = 0;
+    let timeLeft = 0;
+    let isPlaying = false;
+    let audioCtx = null;
+    let currentTimerMode = 'auto'; 
+    let manualCountdown = false; 
+    let isFirstFrame = false; 
+    
+    let nextStateChange = 0; 
+    let currentTickState = 'normal'; 
+    let isTickToggle = true; 
+    let lastTopic = ""; 
+    let eliminationMode = false;
+    let lowStimMode = false;
+    let muted = false;
+    let isPaused = false;
+
+    const setupScreen = document.getElementById('setupScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const playerInputs = document.getElementById('playerInputs');
+    const playerCountSelect = document.getElementById('playerCount');
+    const timerModeSelect = document.getElementById('timerMode');
+    const autoTimeSetting = document.getElementById('autoTimeSetting');
+    const minTimeInput = document.getElementById('minTimeInput');
+    const maxTimeInput = document.getElementById('maxTimeInput');
+    const bTimeInput = document.getElementById('bTimeInput');
+    const eliminationModeCheckbox = document.getElementById('eliminationMode');
+    const lowStimModeCheckbox = document.getElementById('lowStimMode');
+    const topicText = document.getElementById('topicText');
+    const turnDisplay = document.getElementById('turnDisplay');
+    const nextUpHint = document.getElementById('nextUpHint');
+    const survivorList = document.getElementById('survivorList');
+    const bombIcon = document.getElementById('bombIcon');
+    const explosionOverlay = document.getElementById('explosionOverlay');
+    const loserText = document.getElementById('loserText');
+    const winnerText = document.getElementById('winnerText');
+    const resultActions = document.getElementById('resultActions');
+    const muteBtn = document.getElementById('muteBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+
+    function toggleMute() {
+      muted = !muted;
+      muteBtn.textContent = muted ? '소리 끔' : '소리 켬';
+    }
+
+    // 배경색 밝기를 계산해서 글자색(흰/검)을 자동으로 대비되게 골라줍니다.
+    function getContrastTextColor(hexColor) {
+      const c = hexColor.replace('#', '');
+      const r = parseInt(c.substring(0, 2), 16);
+      const g = parseInt(c.substring(2, 4), 16);
+      const b = parseInt(c.substring(4, 6), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 150 ? '#222' : '#fff';
+    }
+
+    timerModeSelect.addEventListener('change', () => {
+      if (timerModeSelect.value === 'auto') {
+        autoTimeSetting.style.display = 'block';
+      } else {
+        autoTimeSetting.style.display = 'none';
+      }
+    });
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // [업그레이드된 아날로그 시계 틱톡 사운드] 찰싹거리는 고음을 없애고 묵직한 울림 강화
+    function playTick(speedRate) {
+      if (!audioCtx || muted) return;
+      const t = audioCtx.currentTime;
+
+      // 틱(Tick)과 톡(Tock)의 주파수를 낮추고 부드러운 사인파 계열 사용
+      const baseFreq = isTickToggle ? 520 : 420; 
+      isTickToggle = !isTickToggle;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine'; 
+      osc.frequency.setValueAtTime(baseFreq, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.04);
+      
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.04);
+
+      // 저음역대 나무/케이스 울림소리 추가 (목공예 시계 느낌)
+      const woodOsc = audioCtx.createOscillator();
+      const woodGain = audioCtx.createGain();
+      woodOsc.type = 'triangle';
+      woodOsc.frequency.setValueAtTime(180, t);
+      woodGain.gain.setValueAtTime(0.2, t);
+      woodGain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
+      woodOsc.connect(woodGain);
+      woodGain.connect(audioCtx.destination);
+      woodOsc.start(t);
+      woodOsc.stop(t + 0.03);
+
+      if (!bombIcon.classList.contains('vibrating')) {
+        bombIcon.style.transform = `scale(${1.15 + (speedRate * 0.3)})`;
+        setTimeout(() => { 
+          if (!bombIcon.classList.contains('vibrating')) bombIcon.style.transform = 'scale(1)'; 
+        }, 50);
+      }
+    }
+
+    function playBoom() {
+      if (!audioCtx || muted) return;
+      const t = audioCtx.currentTime;
+      const boomVolume = lowStimMode ? 0.45 : 0.8;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(10, t + 1.5);
+      gain.gain.setValueAtTime(boomVolume, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 1.5);
+
+      const bufferSize = audioCtx.sampleRate * 2; 
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const noiseSource = audioCtx.createBufferSource();
+      noiseSource.buffer = buffer;
+      const noiseFilter = audioCtx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.value = 800;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(lowStimMode ? 0.5 : 1, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(audioCtx.destination);
+      noiseSource.start(t);
+    }
+
+    function renderPlayerInputs() {
+      const count = parseInt(playerCountSelect.value);
+      playerInputs.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const div = document.createElement('div');
+        div.className = 'player-row';
+        const emojiOptions = AVATAR_EMOJIS.map(e =>
+          `<option value="${e}" ${e === DEFAULT_AVATARS[i % DEFAULT_AVATARS.length] ? 'selected' : ''}>${e}</option>`
+        ).join('');
+        div.innerHTML = `
+          <select id="pAvatar${i}" class="emoji-select">${emojiOptions}</select>
+          <input type="text" id="pName${i}" value="플레이어 ${i + 1}" maxlength="10" style="width:100%;">
+          <input type="color" id="pColor${i}" value="${DEFAULT_COLORS[i]}">
+        `;
+        playerInputs.appendChild(div);
+      }
+    }
+
+    playerCountSelect.addEventListener('change', renderPlayerInputs);
+    renderPlayerInputs();
+
+    function startGame() {
+      initAudio();
+      
+      players = [];
+      const count = parseInt(playerCountSelect.value);
+      for (let i = 0; i < count; i++) {
+        players.push({
+          name: document.getElementById(`pName${i}`).value || `플레이어 ${i+1}`,
+          color: document.getElementById(`pColor${i}`).value,
+          avatar: document.getElementById(`pAvatar${i}`).value,
+          alive: true
+        });
+      }
+
+      eliminationMode = eliminationModeCheckbox.checked;
+      lowStimMode = lowStimModeCheckbox.checked;
+
+      currentTimerMode = timerModeSelect.value;
+      manualCountdown = false;
+      isPaused = false;
+      pauseOverlay.classList.remove('show');
+      pauseBtn.textContent = '일시정지';
+      bombIcon.classList.remove('vibrating');
+      
+      setupScreen.classList.remove('active');
+      gameScreen.classList.add('active');
+      
+      changeTopic();
+      currentPlayerIndex = 0; 
+      updateTurnUI();
+      isPlaying = true;
+      
+      if (currentTimerMode === 'auto') {
+        startAutoTimer();
+      } else {
+        startManualTimer();
+      }
+    }
+
+    function restartGame() {
+      initAudio();
+      
+      explosionOverlay.classList.remove('show');
+      explosionOverlay.classList.remove('soft-flash');
+      bombIcon.classList.remove('vibrating');
+      
+      manualCountdown = false;
+      isPaused = false;
+      pauseOverlay.classList.remove('show');
+      pauseBtn.textContent = '일시정지';
+      
+      changeTopic();
+      currentPlayerIndex = 0; 
+      updateTurnUI();
+      isPlaying = true;
+      
+      if (currentTimerMode === 'auto') {
+        startAutoTimer();
+      } else {
+        startManualTimer();
+      }
+    }
+
+    // 서바이벌 모드: 탈락자를 빼고 남은 인원으로 다음 라운드 진행
+    function continueElimRound() {
+      initAudio();
+
+      explosionOverlay.classList.remove('show');
+      explosionOverlay.classList.remove('soft-flash');
+      bombIcon.classList.remove('vibrating');
+
+      manualCountdown = false;
+      isPaused = false;
+      pauseOverlay.classList.remove('show');
+      pauseBtn.textContent = '일시정지';
+
+      changeTopic();
+      currentPlayerIndex = findNextAliveIndex(currentPlayerIndex);
+      updateTurnUI();
+      isPlaying = true;
+
+      if (currentTimerMode === 'auto') {
+        startAutoTimer();
+      } else {
+        startManualTimer();
+      }
+    }
+
+    // 서바이벌 모드: 우승자가 나온 뒤 전원을 부활시켜 새 게임 시작
+    function startNewElimRound() {
+      players.forEach(p => p.alive = true);
+      currentPlayerIndex = players.length - 1; // continueElimRound가 findNextAliveIndex로 0번부터 다시 찾도록
+      continueElimRound();
+    }
+
+    function findNextAliveIndex(fromIndex) {
+      let idx = fromIndex;
+      for (let i = 0; i < players.length; i++) {
+        idx = (idx + 1) % players.length;
+        if (players[idx].alive) return idx;
+      }
+      return fromIndex; // 남은 생존자가 없는 예외 상황 대비
+    }
+
+    function changeTopic() {
+      let randomTopic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+      while(randomTopic === lastTopic) {
+        randomTopic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+      }
+      lastTopic = randomTopic;
+      topicText.textContent = randomTopic;
+    }
+
+    let lastTime = 0;
+    function updateAutoTimer(currentTime) {
+      if (!isPlaying || currentTimerMode !== 'auto') return;
+      
+      if (isFirstFrame) {
+        lastTime = currentTime;
+        isFirstFrame = false;
+      }
+
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      timeLeft -= deltaTime;
+
+      if (timeLeft <= 3000) {
+      } else {
+      }
+
+      if (timeLeft <= 0) {
+        explode();
+      } else {
+        timerId = requestAnimationFrame(updateAutoTimer);
+      }
+    }
+
+    function startAutoTimer(customSeconds = null) {
+      if (timerId) cancelAnimationFrame(timerId);
+      if (tickId) clearTimeout(tickId);
+      
+      let setSeconds = customSeconds;
+      
+      if (!setSeconds) {
+        let min = parseInt(minTimeInput.value) || 15;
+        let max = parseInt(maxTimeInput.value) || 40;
+        
+        if (min < 8) min = 8;
+        if (min >= max) {
+            max = min + 15;
+            maxTimeInput.value = max;
+        }
+        
+        setSeconds = Math.random() * (max - min) + min;
+      }
+      
+      totalTime = setSeconds * 1000; 
+      timeLeft = totalTime;
+      
+      nextStateChange = performance.now() + 1000; 
+      currentTickState = 'normal';
+      
+      isFirstFrame = true; 
+      timerId = requestAnimationFrame(updateAutoTimer);
+      scheduleAutoTick();
+    }
+
+    // [더욱 요동치는 페이크 타이머] 페이크 주기를 완전히 불규칙하게 꼬아둠
+    function scheduleAutoTick() {
+      if (!isPlaying || currentTimerMode !== 'auto' || timeLeft <= 0) return;
+      
+      let now = performance.now();
+      let tickInterval, speedRate;
+      
+      let realPanicThreshold = manualCountdown ? (totalTime / 2) : 5000;
+
+      if (timeLeft <= realPanicThreshold) {
+        const timeRatio = Math.max(0, timeLeft / realPanicThreshold);
+        tickInterval = 60 + (timeRatio * 500); 
+        speedRate = 1 - timeRatio;
+        
+        if (timeLeft <= 3000) {
+          bombIcon.classList.add('vibrating');
+        } else {
+          bombIcon.classList.remove('vibrating');
+        }
+      } else {
+        bombIcon.classList.remove('vibrating');
+        
+        if (now > nextStateChange) {
+          const rand = Math.random();
+          if (currentTickState === 'normal') {
+            if (rand < 0.5) { // 50% 확률로 갑자기 빨라짐
+              currentTickState = 'panic';
+              nextStateChange = now + (600 + Math.random() * 1800);
+            } else {
+              nextStateChange = now + (1500 + Math.random() * 2500);
+            }
+          } else {
+            currentTickState = 'normal';
+            nextStateChange = now + (1500 + Math.random() * 2500);
+          }
+        }
+        
+        // 패닉일 때 0.12초~0.22초 사이로 미친 듯이 뜀
+        if (currentTickState === 'panic') {
+           tickInterval = 120 + Math.random() * 100; 
+           speedRate = 0.8;
+        } else {
+           tickInterval = 600 + Math.random() * 400; 
+           speedRate = 0.2;
+        }
+      }
+
+      playTick(speedRate);
+      tickId = setTimeout(scheduleAutoTick, tickInterval);
+    }
+
+    function startManualTimer() {
+      if (timerId) cancelAnimationFrame(timerId);
+      if (tickId) clearTimeout(tickId);
+      
+      nextStateChange = performance.now() + 1000; 
+      currentTickState = 'normal';
+      scheduleManualTick();
+    }
+
+    function scheduleManualTick() {
+      if (!isPlaying || currentTimerMode !== 'manual' || manualCountdown) return;
+      
+      let now = performance.now();
+      if (now > nextStateChange) {
+        const rand = Math.random();
+        if (currentTickState === 'normal') {
+          if (rand < 0.5) {
+            currentTickState = 'panic';
+            nextStateChange = now + (600 + Math.random() * 1800);
+          } else {
+            nextStateChange = now + (1500 + Math.random() * 2500);
+          }
+        } else {
+          currentTickState = 'normal';
+          nextStateChange = now + (1500 + Math.random() * 2500);
+        }
+      }
+
+      let tickInterval, speedRate;
+      if (currentTickState === 'panic') {
+         tickInterval = 120 + Math.random() * 100; 
+         speedRate = 0.8;
+      } else {
+         tickInterval = 600 + Math.random() * 400; 
+         speedRate = 0.2;
+      }
+
+      playTick(speedRate);
+      tickId = setTimeout(scheduleManualTick, tickInterval);
+    }
+
+    function passTurn() {
+      if (!isPlaying || isPaused) return;
+      initAudio();
+      currentPlayerIndex = eliminationMode ? findNextAliveIndex(currentPlayerIndex) : (currentPlayerIndex + 1) % players.length;
+      updateTurnUI();
+    }
+
+    function updateTurnUI() {
+      const player = players[currentPlayerIndex];
+      turnDisplay.style.backgroundColor = player.color;
+      turnDisplay.textContent = `${player.avatar || ''} ${player.name} 차례!`;
+      turnDisplay.style.color = getContrastTextColor(player.color);
+      turnDisplay.style.textShadow = "none";
+
+      // 다음 차례 예고
+      if (players.length > 1) {
+        const nextIdx = eliminationMode ? findNextAliveIndex(currentPlayerIndex) : (currentPlayerIndex + 1) % players.length;
+        const nextPlayer = players[nextIdx];
+        nextUpHint.textContent = nextIdx !== currentPlayerIndex ? `다음 차례: ${nextPlayer.avatar || ''} ${nextPlayer.name}` : '';
+      } else {
+        nextUpHint.textContent = '';
+      }
+
+      renderSurvivorList();
+    }
+
+    // 서바이벌 모드일 때 생존/탈락 현황을 칩 형태로 보여줍니다.
+    function renderSurvivorList() {
+      if (!eliminationMode) {
+        survivorList.innerHTML = '';
+        return;
+      }
+      survivorList.innerHTML = players.map((p, idx) => {
+        const classes = ['survivor-chip'];
+        if (!p.alive) classes.push('eliminated');
+        if (idx === currentPlayerIndex && p.alive) classes.push('current-turn');
+        return `<span class="${classes.join(' ')}">${p.avatar || ''} ${p.name}</span>`;
+      }).join('');
+    }
+
+    function togglePause() {
+      if (!isPlaying) return;
+      isPaused = !isPaused;
+
+      if (isPaused) {
+        pauseOverlay.classList.add('show');
+        pauseBtn.textContent = '계속하기';
+        if (timerId) { cancelAnimationFrame(timerId); timerId = null; }
+        if (tickId) { clearTimeout(tickId); tickId = null; }
+      } else {
+        initAudio();
+        pauseOverlay.classList.remove('show');
+        pauseBtn.textContent = '일시정지';
+
+        if (currentTimerMode === 'auto') {
+          isFirstFrame = true;
+          nextStateChange = performance.now() + 1000;
+          timerId = requestAnimationFrame(updateAutoTimer);
+          scheduleAutoTick();
+        } else {
+          nextStateChange = performance.now() + 1000;
+          scheduleManualTick();
+        }
+      }
+    }
+
+    function explode() {
+      isPlaying = false;
+      if (timerId) cancelAnimationFrame(timerId);
+      if (tickId) clearTimeout(tickId);
+      
+      bombIcon.classList.remove('vibrating');
+      
+      document.body.classList.add(lowStimMode ? 'gentle-shake-screen' : 'violent-shake-screen');
+      playBoom();
+
+      const loser = players[currentPlayerIndex];
+      if (eliminationMode) loser.alive = false;
+      
+      setTimeout(() => {
+        document.body.classList.remove('violent-shake-screen');
+        document.body.classList.remove('gentle-shake-screen');
+
+        explosionOverlay.classList.toggle('soft-flash', lowStimMode);
+        explosionOverlay.classList.add('show');
+
+        loserText.textContent = `${loser.avatar || ''} ${loser.name} 탈락!`;
+        turnDisplay.style.backgroundColor = "";
+        renderSurvivorList();
+
+        if (eliminationMode) {
+          const aliveCount = players.filter(p => p.alive).length;
+          if (aliveCount <= 1) {
+            const winner = players.find(p => p.alive);
+            winnerText.style.display = 'block';
+            winnerText.textContent = winner ? `${winner.avatar || ''} ${winner.name} 우승!` : '게임 종료';
+            resultActions.innerHTML = `
+              <button class="btn-action" onclick="startNewElimRound()">전원 부활 후 새 게임</button>
+              <button class="btn-secondary" onclick="resetToSetup()">홈 화면으로</button>
+            `;
+          } else {
+            winnerText.style.display = 'none';
+            resultActions.innerHTML = `
+              <button class="btn-action" onclick="continueElimRound()">다음 라운드 (남은 ${aliveCount}명)</button>
+              <button class="btn-secondary" onclick="resetToSetup()">홈 화면으로</button>
+            `;
+          }
+        } else {
+          winnerText.style.display = 'none';
+          resultActions.innerHTML = `
+            <button class="btn-action" onclick="restartGame()">같은 순서로 재시작</button>
+            <button class="btn-secondary" onclick="resetToSetup()">홈 화면으로</button>
+          `;
+        }
+      }, 500);
+    }
+
+    function resetToSetup() {
+      explosionOverlay.classList.remove('show');
+      explosionOverlay.classList.remove('soft-flash');
+      winnerText.style.display = 'none';
+      isPaused = false;
+      pauseOverlay.classList.remove('show');
+      pauseBtn.textContent = '일시정지';
+      resultActions.innerHTML = `
+        <button class="btn-action" onclick="restartGame()">같은 순서로 재시작</button>
+        <button class="btn-secondary" onclick="resetToSetup()">홈 화면으로</button>
+      `;
+      gameScreen.classList.remove('active');
+      setupScreen.classList.add('active');
+      turnDisplay.style.backgroundColor = "";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (gameScreen.classList.contains('active') && isPlaying) {
+        if (e.code === "KeyP") {
+          e.preventDefault();
+          togglePause();
+          return;
+        }
+
+        if (isPaused) return;
+
+        if (e.code === "Space" || e.code === "Enter") {
+          e.preventDefault();
+          passTurn();
+        }
+        
+        if (!manualCountdown) {
+          if (e.code === "KeyB" || e.key === "b" || e.key === "B") {
+            e.preventDefault();
+            manualCountdown = true;
+            currentTimerMode = 'auto'; 
+            
+            let bTime = parseInt(bTimeInput.value) || 10;
+            startAutoTimer(bTime); 
+          }
+        }
+      }
+    });
+
+  </script>
+</body>
+</html>

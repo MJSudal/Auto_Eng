@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>영어 문장 배열 게임</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#f1f2ee; --surface:#fff; --ink:#15201b; --muted:#59645d;
+  --line:#d8dcd5; --line-strong:#b4bcb2;
+  --board:#1c3a33; --board-ink:#f3f1e7; --chalk:#f1c24b;
+  --danger:#c4352b; --danger-bg:#fbeceb; --ok:#1d7a4b; --ok-bg:#e6f3ec;
+  --focus:#2f6fdc;
+  --r-panel:12px; --r-ctl:8px;
+  --font:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;
+  -webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.hidden{display:none!important}
+h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.25}
+h1{font-size:clamp(22px,3.2vw,28px);font-weight:700}
+h2{font-size:18px;font-weight:700;margin-bottom:12px}
+h3{font-size:16px;font-weight:700;margin-bottom:10px}
+.screen{display:none}.screen.active{display:block}
+.app{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:20px 0 56px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:0 0 16px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 버튼: 평평한 면, 눌렀을 때만 살짝 가라앉음 */
+.btn,.primary,.secondary,.danger,.green,.blue,.icon-btn,
+.btn-primary,.btn-secondary,.btn-action{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:10px 18px;border-radius:var(--r-ctl);
+  border:1px solid var(--ink);background:var(--ink);color:#fff;font-weight:600;font-size:15px;
+  transition:background-color .15s,border-color .15s,transform .08s}
+.btn:active,.primary:active,.danger:active,.green:active,.blue:active,
+.btn-primary:active,.btn-secondary:active,.btn-action:active,.secondary:active,.icon-btn:active{transform:translateY(1px)}
+.primary:hover,.btn-primary:hover,.btn-action:hover,.blue:hover{background:var(--board);border-color:var(--board)}
+.secondary,.icon-btn,.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.secondary:hover,.icon-btn:hover,.btn-secondary:hover{background:#f6f7f4;border-color:var(--ink)}
+.danger{background:var(--danger);border-color:var(--danger)}
+.danger:hover{background:#a52b22;border-color:#a52b22}
+.green{background:var(--ok);border-color:var(--ok)}
+.green:hover{background:#166039;border-color:#166039}
+.btn-primary,.start{min-height:52px;font-size:17px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 면(패널) */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-panel);padding:22px}
+.field{padding:0}
+.field.full{grid-column:1/-1}
+label{display:block;font-weight:600;font-size:14px;color:var(--ink);margin:0 0 6px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:var(--r-ctl);
+  border:1px solid var(--line-strong);background:var(--surface);font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px rgba(47,111,220,.18)}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(--ink)}
+.help,.help-text{margin-top:8px;color:var(--muted);font-size:14px;line-height:1.6}
+.rules{margin:0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.75}
+
+.badge{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  background:var(--ink);color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+.player-list,.player-setup{display:grid;gap:8px;margin-top:12px}
+.player-row{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+
+/* 모달 */
+.overlay,.pause-overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(14,22,18,.6)}
+.overlay.show,.pause-overlay.show{display:flex}
+.modal,.pause-modal,.pause-card{width:min(440px,100%);padding:28px;border-radius:var(--r-panel);
+  background:var(--surface);border:1px solid var(--line);text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.modal p,.pause-modal p,.pause-card p{color:var(--muted);margin:8px 0 20px}
+.modal h2{font-size:24px;margin-bottom:6px}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+
+.app{width:min(980px,calc(100% - 32px))}
+.card{margin-bottom:18px}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px 32px;padding:clamp(20px,4vw,30px)}
+.field h2{padding-bottom:10px;border-bottom:1px solid var(--line)}
+.field>label:first-of-type{margin-top:0}
+
+.choice-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.choice-chip{position:relative;margin:0}
+.choice-chip input{position:absolute;inset:0;opacity:0;width:100%;height:100%;min-height:0;margin:0;cursor:pointer}
+.choice-chip span{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border-radius:var(--r-ctl);
+  border:1px solid var(--line-strong);font-weight:600;font-size:15px;color:var(--ink);background:var(--surface);transition:background-color .15s,color .15s}
+.choice-chip:hover span{border-color:var(--ink)}
+.choice-chip input:checked + span{background:var(--ink);border-color:var(--ink);color:#fff}
+.choice-chip input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.choice-chip.small span{min-height:36px;padding:5px 12px;font-size:13px}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.toggle-row input{width:20px;height:20px}
+.toggle-row span{font-weight:600;font-size:15px}
+.btn-primary{display:flex;width:100%}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---- 게임 ---- */
+.score-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.score-chip{padding:5px 12px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);font-weight:600;font-size:14px}
+.score-chip.current{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.score-chip .pts{margin-left:6px;font-weight:700}
+.turn-box{background:var(--ink);color:#fff;border-radius:var(--r-ctl);padding:14px 18px;margin-bottom:12px}
+.turn-box small{color:#b9c3bd;font-size:13px}
+.turn-name{font-size:26px;font-weight:700;margin-top:2px}
+.next-up-hint{font-size:13px;color:#b9c3bd;margin-top:2px}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-box{padding:12px;border:1px solid var(--line);border-radius:var(--r-ctl);text-align:center}
+.stat-box .num{font-size:30px;font-weight:700;line-height:1.1}
+.stat-box .lab{color:var(--muted);font-size:13px;margin-top:2px}
+.stat-box.warning{border-color:var(--danger);background:var(--danger-bg)}
+.stat-box.warning .num,.stat-box.warning .lab{color:var(--danger)}
+
+.prompt-card{background:var(--board);color:var(--board-ink);border-radius:var(--r-panel);padding:28px 22px;text-align:center;margin-bottom:16px}
+.prompt-label{color:#b9cdc6;font-size:14px;margin-bottom:10px}
+.prompt-kr{font-size:clamp(22px,3.6vw,30px);font-weight:700;line-height:1.45;letter-spacing:-.01em}
+.type-badge{display:inline-block;margin-top:14px;padding:3px 12px;border-radius:999px;border:1px solid var(--chalk);color:var(--chalk);font-weight:600;font-size:13px}
+
+#typingPanel textarea{min-height:84px;padding:14px;font-size:20px;font-weight:500;resize:none}
+.zone-label{font-weight:600;font-size:14px;color:var(--muted);margin:16px 0 8px}
+.chip-zone{min-height:68px;border-radius:var(--r-ctl);padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;transition:background-color .15s,border-color .15s}
+#wordBank{background:var(--bg);border:1px dashed var(--line-strong)}
+#answerZone{background:var(--surface);border:2px solid var(--ink);min-height:76px}
+#answerZone.drag-over,#wordBank.drag-over{background-color:#e7efe9;border-color:var(--ok)}
+#answerZone:empty::after{content:"여기에 단어 조각을 끌어다 놓거나, 조각을 눌러 보내세요.";color:var(--muted);font-size:14px;padding:8px}
+.word-chip{padding:9px 14px;border-radius:var(--r-ctl);background:var(--surface);border:1px solid var(--line-strong);
+  font-weight:600;font-size:18px;cursor:grab;user-select:none;touch-action:none;transition:border-color .1s,background-color .1s}
+.word-chip:hover{border-color:var(--ink)}
+.word-chip:active{cursor:grabbing}
+.word-chip.dragging{opacity:.35}
+#answerZone .word-chip{background:var(--board);border-color:var(--board);color:var(--board-ink)}
+.arrange-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+
+.message{margin-top:14px;padding:12px 16px;border-radius:var(--r-ctl);font-weight:600;font-size:15px;text-align:center;background:var(--bg);color:var(--ink)}
+.message.success{background:var(--ok-bg);color:var(--ok)}
+.message.error{background:var(--danger-bg);color:var(--danger)}
+.controls{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.controls button{flex:1;min-width:140px;min-height:52px}
+.modal-icon{display:none}
+.final-list{display:grid;gap:6px;margin:18px 0;text-align:left}
+.final-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r-ctl);font-weight:600}
+.final-row>span:nth-child(2){flex:1}
+.final-row.winner{border-color:var(--ink);background:var(--chalk)}
+.final-row .rank{color:var(--muted);font-weight:700;width:24px}
+.final-row.winner .rank{color:var(--ink)}
+.final-row .pts{font-weight:700}
+
+/* 문장 모음집 */
+.bank-count{font-size:14px;color:var(--muted);font-weight:500;margin-left:8px}
+.bank-type-counts{color:var(--muted);font-size:14px;margin-top:2px}
+.add-sentence-grid{display:grid;grid-template-columns:1.3fr 1.3fr .8fr auto;gap:10px;align-items:end;margin-top:14px}
+.add-sentence-grid button{height:46px;white-space:nowrap}
+.bulk-add{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-ctl);padding:12px 14px;background:var(--bg)}
+.bulk-add summary{cursor:pointer;font-weight:600;font-size:15px}
+.bulk-add textarea{margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;resize:vertical}
+.bulk-add code{background:var(--surface);border:1px solid var(--line);padding:1px 6px;border-radius:4px;font-size:13px}
+.bank-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.bank-toolbar input[type=text]{flex:1;min-width:160px}
+.danger-text{color:var(--danger);border-color:#e3b9b5}
+.danger-text:hover{background:var(--danger-bg);border-color:var(--danger)}
+.bank-list{margin-top:12px;max-height:340px;overflow-y:auto;display:grid;gap:6px;padding-right:4px}
+.bank-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:9px 12px;border-radius:var(--r-ctl);border:1px solid var(--line);background:var(--surface)}
+.bank-type-badge{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;border:1px solid}
+.bank-type-badge.pos{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+.bank-type-badge.neg{color:var(--danger);border-color:var(--danger);background:var(--danger-bg)}
+.bank-type-badge.q{color:#2a4f9a;border-color:#2a4f9a;background:#e9eff9}
+.bank-text{font-size:14px;line-height:1.45}
+.bank-text b{font-weight:600}
+.bank-en{color:var(--muted)}
+.bank-del{border:0;background:transparent;color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:16px;line-height:1;flex-shrink:0}
+.bank-del:hover{background:var(--danger);color:#fff}
+.bank-empty{color:var(--muted);text-align:center;padding:20px;font-size:14px}
+.bank-more-notice{color:var(--muted);font-size:13px;margin-top:6px}
+
+@media(max-width:760px){.setup-grid{grid-template-columns:1fr}.add-sentence-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.word-chip{font-size:16px;padding:8px 11px}.turn-name{font-size:22px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="brand"><h1>영어 문장 배열 게임</h1><p>나만의 문장으로 만드는 타자 치기 · 단어 배열 게임</p></div>
+    <div class="top-actions">
+      <button id="pauseBtn" class="icon-btn hidden">일시정지</button>
+      <button id="homeBtn" class="icon-btn hidden">홈</button>
+      <button id="soundBtn" class="icon-btn">소리 켬</button>
+    </div>
+  </header>
+
+  <!-- ===================== 설정 화면 ===================== -->
+  <section id="setup" class="screen active">
+    <div class="card setup-grid">
+      <div class="field full" id="sentenceBankField">
+        <h2>내 문장 모음집 <span id="bankCount" class="bank-count">0 / 3000</span></h2>
+        <div class="help">게임에 쓸 문장을 먼저 등록해 주세요. 최대 3,000개까지 저장되고, 이 기기에 계속 보관돼요.</div>
+        <div id="bankTypeCounts" class="bank-type-counts"></div>
+
+        <div class="add-sentence-grid">
+          <div>
+            <label for="addKr">한국어 뜻</label>
+            <input type="text" id="addKr" placeholder="예: 나는 매일 아침을 먹는다.">
+          </div>
+          <div>
+            <label for="addEn">영어 문장</label>
+            <input type="text" id="addEn" placeholder="예: I eat breakfast every day.">
+          </div>
+          <div>
+            <label for="addType">유형</label>
+            <select id="addType">
+              <option value="pos">긍정문</option>
+              <option value="neg">부정문</option>
+              <option value="q">의문문</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn-action" id="addSentenceBtn" type="button">+ 추가</button>
+          </div>
+        </div>
+
+        <details class="bulk-add">
+          <summary>여러 문장 한꺼번에 추가하기</summary>
+          <div class="help" style="margin-top:8px">
+            한 줄에 문장 하나씩, <code>한국어 뜻 | 영어 문장 | 유형</code> 형식으로 입력하세요. 유형(pos/neg/q)은 생략하면 자동으로 판별해요.<br>
+            예시)<br>
+            <code>나는 매일 아침을 먹는다. | I eat breakfast every day. | pos</code><br>
+            <code>그는 숙제를 하지 않았다. | He didn't do his homework.</code>
+          </div>
+          <textarea id="bulkInput" rows="6" placeholder="한 줄에 하나씩 입력하세요"></textarea>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn-secondary" id="bulkAddBtn" type="button">일괄 추가</button>
+          </div>
+          <div id="bulkResult" class="help"></div>
+        </details>
+
+        <div class="bank-toolbar">
+          <input type="text" id="bankSearch" placeholder="등록된 문장 검색...">
+          <div class="choice-row" id="bankFilterType">
+            <label class="choice-chip small"><input type="checkbox" value="pos" checked><span>긍정</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="neg" checked><span>부정</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="q" checked><span>의문</span></label>
+          </div>
+          <button class="btn-secondary danger-text" id="clearAllBtn" type="button">전체 삭제</button>
+        </div>
+        <div id="bankList" class="bank-list"></div>
+        <div id="bankMoreNotice" class="bank-more-notice"></div>
+      </div>
+
+      <div class="field">
+        <h2>플레이어</h2>
+        <label for="playerCount">인원 (최대 8명)</label>
+        <select id="playerCount">
+          <option value="1">1명</option><option value="2" selected>2명</option><option value="3">3명</option>
+          <option value="4">4명</option><option value="5">5명</option><option value="6">6명</option>
+          <option value="7">7명</option><option value="8">8명</option>
+        </select>
+        <div id="playerList" class="player-list"></div>
+      </div>
+
+      <div class="field">
+        <h2>게임 모드</h2>
+        <label>문제 출제 방식</label>
+        <div class="choice-row" id="modeChoice">
+          <label class="choice-chip"><input type="radio" name="gmode" value="type" checked><span>타자 치기</span></label>
+          <label class="choice-chip"><input type="radio" name="gmode" value="arrange"><span>단어 배열(드래그)</span></label>
+          <label class="choice-chip"><input type="radio" name="gmode" value="mixed"><span>랜덤(섞어서)</span></label>
+        </div>
+        <div class="help">랜덤을 고르면 문제마다 타자 치기와 단어 배열이 번갈아 무작위로 나와요.</div>
+      </div>
+
+      <div class="field">
+        <h2>문장 유형</h2>
+        <label>출제할 유형 (1개 이상 선택 · 여러 개 선택 시 랜덤으로 섞여요)</label>
+        <div class="choice-row" id="typeChoice">
+          <label class="choice-chip"><input type="checkbox" value="pos" checked><span>긍정문</span></label>
+          <label class="choice-chip"><input type="checkbox" value="neg" checked><span>부정문</span></label>
+          <label class="choice-chip"><input type="checkbox" value="q" checked><span>의문문</span></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <h2>게임 길이</h2>
+        <label>게임 진행 방식</label>
+        <div class="choice-row" id="lengthModeChoice">
+          <label class="choice-chip"><input type="radio" name="lengthMode" value="count" checked><span>문제 수로 정하기</span></label>
+          <label class="choice-chip"><input type="radio" name="lengthMode" value="overall"><span>제한 시간 안에 최대한 많이</span></label>
+        </div>
+
+        <div id="countModeSettings">
+          <label for="questionCount" style="margin-top:14px">총 문제 수</label>
+          <select id="questionCount">
+            <option value="6">6문제</option><option value="10" selected>10문제</option>
+            <option value="15">15문제</option><option value="20">20문제</option>
+            <option value="30">30문제</option><option value="50">50문제</option>
+          </select>
+          <div class="toggle-row">
+            <input type="checkbox" id="useTimer" checked>
+            <span>문제마다 제한 시간 사용</span>
+          </div>
+          <select id="turnTime" style="margin-top:8px">
+            <option value="20">20초</option><option value="30" selected>30초</option>
+            <option value="45">45초</option><option value="60">60초</option><option value="90">90초</option>
+          </select>
+        </div>
+
+        <div id="overallModeSettings" style="display:none">
+          <label for="overallMinutes" style="margin-top:14px">전체 플레이 시간</label>
+          <select id="overallMinutes">
+            <option value="1">1분</option><option value="2">2분</option><option value="3" selected>3분</option>
+            <option value="5">5분</option><option value="7">7분</option><option value="10">10분</option>
+            <option value="15">15분</option><option value="20">20분</option>
+          </select>
+          <div class="help">이 시간이 끝날 때까지 문제가 계속 나와요. 가장 많이 맞힌 사람이 우승! 문제별 개별 제한 시간은 없어요.</div>
+        </div>
+      </div>
+
+      <div class="field full">
+        <h2>게임 방법</h2>
+        <ol class="rules">
+          <li>맨 위 '내 문장 모음집'에서 문장을 먼저 등록해 주세요. (최대 3,000개 저장)</li>
+          <li>맨 위에 한국어 뜻이 나오면, 그 뜻에 맞는 영어 문장을 완성하세요.</li>
+          <li>타자 치기: 입력창에 영어 문장을 직접 타이핑합니다. (대소문자는 구분하지 않고, 마침표/물음표는 없어도 정답 처리돼요)</li>
+          <li>단어 배열: 가운데 단어 조각을 마우스로 드래그해서 맨 아래 칸에 순서대로 놓으세요. (조각을 클릭해도 이동돼요)</li>
+          <li>정답을 맞히면 점수 1점을 얻고 다음 사람 차례로 넘어갑니다.</li>
+          <li>'문제 수로 정하기'는 정해진 문제 수를 다 풀면 끝나고, '제한 시간 안에 최대한 많이'는 전체 시간이 끝날 때까지 계속 문제가 나와요.</li>
+          <li>풀기 어려우면 '통과' 버튼으로 다음 사람에게 넘길 수 있어요.</li>
+          <li>게임이 끝나면 점수가 가장 높은 사람이 우승합니다.</li>
+        </ol>
+      </div>
+
+      <div class="field full">
+        <button class="btn-primary" id="startBtn">게임 시작하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 게임 화면 ===================== -->
+  <section id="game" class="screen">
+    <div class="card">
+      <div id="scoreStrip" class="score-strip"></div>
+
+      <div class="turn-box">
+        <small>현재 차례</small>
+        <div id="currentPlayer" class="turn-name">플레이어 1</div>
+        <div id="nextUpHint" class="next-up-hint"></div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box" id="timerBox"><div id="timerValue" class="num">30</div><div id="timerLabel" class="lab">남은 시간</div></div>
+        <div class="stat-box"><div id="progressValue" class="num">1 / 10</div><div id="progressLabel" class="lab">문제 진행</div></div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-label">다음 뜻에 맞는 영어 문장을 완성하세요</div>
+        <div id="promptKr" class="prompt-kr">한국어 뜻이 여기에 나와요</div>
+        <div id="typeBadge" class="type-badge">긍정문</div>
+      </div>
+
+      <div id="typingPanel">
+        <textarea id="typingInput" placeholder="여기에 영어 문장을 입력하세요" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+      </div>
+
+      <div id="arrangePanel" style="display:none">
+        <div class="zone-label">단어 조각 (여기서 아래로 드래그 또는 클릭)</div>
+        <div id="wordBank" class="chip-zone"></div>
+        <div class="zone-label">문장을 완성하는 공간</div>
+        <div id="answerZone" class="chip-zone"></div>
+        <div class="arrange-actions">
+          <button class="btn-secondary" id="shuffleBtn" type="button">다시 섞기</button>
+          <button class="btn-secondary" id="resetBtn" type="button">모두 되돌리기</button>
+        </div>
+      </div>
+
+      <div id="message" class="message" style="display:none"></div>
+
+      <div class="controls">
+        <button class="btn-action" id="submitBtn">정답 확인</button>
+        <button class="btn-secondary" id="skipBtn">통과(정답 보기)</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="pauseOverlay" class="overlay">
+    <div class="modal">
+      
+      <h2>일시정지됨</h2>
+      <p>타이머가 멈춰 있어요. 준비되면 계속하기를 누르세요.</p>
+      <button class="btn-action" id="resumeBtn" style="width:100%">계속하기</button>
+    </div>
+  </div>
+
+  <div id="resultOverlay" class="overlay">
+    <div class="modal">
+      
+      <h2 id="resultTitle">게임 종료!</h2>
+      <p>수고하셨습니다. 최종 결과예요.</p>
+      <div id="finalList" class="final-list"></div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn-primary" id="againBtn" style="margin-top:0;width:auto;flex:1">같은 설정으로 다시</button>
+        <button class="btn-secondary" id="toSetupBtn" style="flex:1">설정으로</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   문장 저장소 (선생님이 직접 등록, localStorage에 최대 3,000개 저장)
+   ============================================================ */
+const TYPE_LABEL = {pos:"긍정문", neg:"부정문", q:"의문문"};
+const SENTENCE_STORAGE_KEY = "sentenceArrangeGameBank_v1";
+const MAX_SENTENCES = 3000;
+
+function genId(){ return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function loadSentences(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(SENTENCE_STORAGE_KEY) || "[]");
+    return Array.isArray(raw) ? raw.filter(s => s && typeof s.kr==="string" && typeof s.en==="string" && ["pos","neg","q"].includes(s.type)) : [];
+  }catch{ return []; }
+}
+function saveSentences(){
+  try{ localStorage.setItem(SENTENCE_STORAGE_KEY, JSON.stringify(CUSTOM_SENTENCES)); }
+  catch(e){ console.warn("[문장배열] 저장 실패:", e); }
+}
+let CUSTOM_SENTENCES = loadSentences();
+window.CUSTOM_SENTENCES_REF = CUSTOM_SENTENCES; // QA용 참조(아래에서 재할당 시 함께 갱신)
+
+function addSentence(kr, en, type){
+  kr = String(kr||"").trim();
+  en = String(en||"").trim();
+  if(!kr || !en) return {ok:false, reason:"뜻과 문장을 모두 입력해 주세요."};
+  if(CUSTOM_SENTENCES.length >= MAX_SENTENCES) return {ok:false, reason:`최대 ${MAX_SENTENCES}개까지 저장할 수 있어요.`};
+  if(!["pos","neg","q"].includes(type)) type = guessType(en);
+  const entry = {id:genId(), kr, en, type};
+  CUSTOM_SENTENCES.push(entry);
+  saveSentences();
+  return {ok:true, entry};
+}
+
+function guessType(en){
+  const t = String(en||"").trim();
+  if(/\?\s*$/.test(t)) return "q";
+  // n't는 단어 중간(didn't 등)에 바로 붙으므로 단어 경계(\b) 없이 별도로 검사합니다.
+  if(/n't/i.test(t)) return "neg";
+  if(/\b(not|never|no one|nobody|nothing|neither|nor)\b/i.test(t)) return "neg";
+  return "pos";
+}
+
+function bulkAddSentences(text){
+  const lines = String(text||"").split("\n").map(l=>l.trim()).filter(Boolean);
+  let added=0, skippedDup=0, skippedInvalid=0, skippedCap=0;
+  for(let i=0;i<lines.length;i++){
+    if(CUSTOM_SENTENCES.length >= MAX_SENTENCES){ skippedCap = lines.length - i; break; }
+    const parts = lines[i].split("|").map(p=>p.trim());
+    const kr = parts[0], en = parts[1];
+    let type = (parts[2]||"").toLowerCase();
+    if(!kr || !en){ skippedInvalid++; continue; }
+    if(!["pos","neg","q"].includes(type)) type = guessType(en);
+    if(CUSTOM_SENTENCES.some(s=>s.kr===kr && s.en===en)){ skippedDup++; continue; }
+    CUSTOM_SENTENCES.push({id:genId(), kr, en, type});
+    added++;
+  }
+  saveSentences();
+  return {added, skippedDup, skippedInvalid, skippedCap};
+}
+
+function deleteSentence(id){
+  CUSTOM_SENTENCES = CUSTOM_SENTENCES.filter(s=>s.id!==id);
+  window.CUSTOM_SENTENCES_REF = CUSTOM_SENTENCES;
+  saveSentences();
+  renderBankList();
+  updateBankCount();
+}
+
+function clearAllSentences(){
+  if(CUSTOM_SENTENCES.length === 0) return;
+  if(!confirm(`정말 모든 문장(${CUSTOM_SENTENCES.length}개)을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  CUSTOM_SENTENCES = [];
+  window.CUSTOM_SENTENCES_REF = CUSTOM_SENTENCES;
+  saveSentences();
+  renderBankList();
+  updateBankCount();
+}
+
+const BANK_RENDER_CAP = 150;
+function renderBankList(){
+  const q = $("bankSearch").value.trim().toLowerCase();
+  const types = [...document.querySelectorAll('#bankFilterType input:checked')].map(x=>x.value);
+  const filtered = CUSTOM_SENTENCES.filter(s => types.includes(s.type) && (!q || s.kr.toLowerCase().includes(q) || s.en.toLowerCase().includes(q)));
+  const total = filtered.length;
+  const shown = filtered.slice(-BANK_RENDER_CAP).reverse();
+
+  $("bankList").innerHTML = shown.length ? shown.map(s=>`
+    <div class="bank-row">
+      <span class="bank-type-badge ${s.type}">${TYPE_LABEL[s.type]}</span>
+      <span class="bank-text"><b>${escapeHtml(s.kr)}</b><br><span class="bank-en">${escapeHtml(s.en)}</span></span>
+      <button class="bank-del" type="button" data-id="${s.id}" title="삭제">×</button>
+    </div>
+  `).join("") : `<div class="bank-empty">등록된 문장이 없어요. 위에서 문장을 추가해 보세요.</div>`;
+
+  $("bankMoreNotice").textContent = total > BANK_RENDER_CAP ? `검색 결과 ${total}개 중 최근 ${BANK_RENDER_CAP}개만 표시 중이에요. 검색으로 좁혀보시면 더 정확히 찾을 수 있어요.` : "";
+
+  document.querySelectorAll(".bank-del").forEach(btn=>{
+    btn.addEventListener("click", ()=> deleteSentence(btn.dataset.id));
+  });
+}
+
+function updateBankCount(){
+  $("bankCount").textContent = `${CUSTOM_SENTENCES.length} / ${MAX_SENTENCES}`;
+  const counts = {pos:0, neg:0, q:0};
+  CUSTOM_SENTENCES.forEach(s=>{ if(counts[s.type]!==undefined) counts[s.type]++; });
+  $("bankTypeCounts").textContent = `긍정 ${counts.pos}개 · 부정 ${counts.neg}개 · 의문 ${counts.q}개`;
+}
+
+/* ============================================================
+   상태 및 유틸
+   ============================================================ */
+const $ = id => document.getElementById(id);
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function showScreen(name){
+  $("setup").classList.toggle("active", name==="setup");
+  $("game").classList.toggle("active", name==="game");
+  $("homeBtn").classList.toggle("hidden", name==="setup");
+  $("pauseBtn").classList.toggle("hidden", name==="setup");
+}
+
+const state = {
+  players:[], current:0, score:[],
+  mode:"type", types:["pos","neg","q"], pool:[],
+  lengthMode:"count", totalQuestions:10, useTimer:true, turnTime:30, overallSeconds:0,
+  qIndex:0, usedIndices:[],
+  currentSentence:null, currentSubmode:"type",
+  bank:[], answer:[], chunkMap:{},
+  timerId:null, timerEnd:0, timeLeft:30,
+  overallTimerId:null, overallEnd:0, overallTimeLeft:0, pausedOverallLeft:0,
+  isPaused:false, pausedTimeLeft:0,
+  soundOn:true, audio:null, gameOver:false, checking:false
+};
+// QA/자동 테스트용 디버그 참조 (민감 정보 없음, 게임 동작에는 영향 없음)
+window.__GAME_STATE__ = state;
+
+/* ============================================================
+   사운드
+   ============================================================ */
+function initAudio(){ if(!state.audio){ try{ state.audio = new (window.AudioContext||window.webkitAudioContext)(); }catch{} } }
+function beep(freq=600, dur=0.09, vol=0.1){
+  if(!state.soundOn || !state.audio) return;
+  try{
+    const t = state.audio.currentTime;
+    const osc = state.audio.createOscillator();
+    const gain = state.audio.createGain();
+    osc.type = "sine"; osc.frequency.value = freq;
+    gain.gain.value = vol;
+    gain.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    osc.connect(gain); gain.connect(state.audio.destination);
+    osc.start(t); osc.stop(t+dur);
+  }catch{}
+}
+
+/* ============================================================
+   설정 화면
+   ============================================================ */
+function renderPlayersInput(){
+  const count = Number($("playerCount").value);
+  const old = [...document.querySelectorAll(".pname")].map(x=>x.value);
+  $("playerList").innerHTML = "";
+  for(let i=0;i<count;i++){
+    const row = document.createElement("div");
+    row.className = "player-row";
+    row.innerHTML = `<span class="badge">${i+1}</span><input class="pname" value="${escapeHtml(old[i]||`플레이어 ${i+1}`)}" maxlength="12">`;
+    $("playerList").appendChild(row);
+  }
+}
+$("playerCount").addEventListener("change", renderPlayersInput);
+renderPlayersInput();
+
+/* ============================================================
+   문장 모음집 UI 바인딩
+   ============================================================ */
+$("addSentenceBtn").addEventListener("click", ()=>{
+  const res = addSentence($("addKr").value, $("addEn").value, $("addType").value);
+  if(!res.ok){ alert(res.reason); return; }
+  $("addKr").value = ""; $("addEn").value = "";
+  $("addKr").focus();
+  updateBankCount(); renderBankList();
+  initAudio(); beep(680,.08,.1);
+});
+$("bulkAddBtn").addEventListener("click", ()=>{
+  const text = $("bulkInput").value;
+  if(!text.trim()) return;
+  const res = bulkAddSentences(text);
+  let msg = `${res.added}개 추가됨`;
+  if(res.skippedDup) msg += ` · 중복 ${res.skippedDup}개 제외`;
+  if(res.skippedInvalid) msg += ` · 형식 오류 ${res.skippedInvalid}개 제외`;
+  if(res.skippedCap) msg += ` · 저장 한도(${MAX_SENTENCES}개) 초과로 ${res.skippedCap}개 추가 안 됨`;
+  $("bulkResult").textContent = msg;
+  if(res.added > 0) $("bulkInput").value = "";
+  updateBankCount(); renderBankList();
+});
+$("bankSearch").addEventListener("input", renderBankList);
+document.querySelectorAll('#bankFilterType input').forEach(cb => cb.addEventListener("change", renderBankList));
+$("clearAllBtn").addEventListener("click", clearAllSentences);
+updateBankCount();
+renderBankList();
+
+/* ============================================================
+   게임 길이 모드 전환 UI
+   ============================================================ */
+function updateLengthModeUI(){
+  const mode = document.querySelector('input[name="lengthMode"]:checked').value;
+  $("countModeSettings").style.display = mode==="count" ? "" : "none";
+  $("overallModeSettings").style.display = mode==="overall" ? "" : "none";
+}
+document.querySelectorAll('input[name="lengthMode"]').forEach(r => r.addEventListener("change", updateLengthModeUI));
+updateLengthModeUI();
+
+/* ============================================================
+   문장 선택 로직 (유형 필터 + 연속 중복 방지)
+   ============================================================ */
+function pickSentence(){
+  const pool = state.pool;
+  const candidates = pool.map((s,i)=>i).filter(i=>!state.usedIndices.includes(i));
+  const list = candidates.length ? candidates : pool.map((_,i)=>i); // 다 썼으면 초기화하고 다시 뽑기
+  if(!candidates.length) state.usedIndices = [];
+  const idx = list[Math.floor(Math.random()*list.length)];
+  state.usedIndices.push(idx);
+  return pool[idx];
+}
+
+function pickSubmode(){
+  if(state.mode === "mixed") return Math.random() < 0.5 ? "type" : "arrange";
+  return state.mode;
+}
+
+/* ============================================================
+   게임 시작
+   ============================================================ */
+function startGame(){
+  initAudio();
+
+  state.types = [...document.querySelectorAll('#typeChoice input:checked')].map(x=>x.value);
+  if(!state.types.length){ state.types = ["pos","neg","q"]; }
+
+  state.pool = CUSTOM_SENTENCES.filter(s => state.types.includes(s.type));
+  if(state.pool.length === 0){
+    alert("선택한 유형에 해당하는 문장이 없어요. 먼저 '내 문장 모음집'에서 문장을 추가해 주세요.");
+    return;
+  }
+
+  const names = [...document.querySelectorAll(".pname")].map((x,i)=>x.value.trim() || `플레이어 ${i+1}`);
+  state.players = names;
+  state.score = names.map(()=>0);
+  state.current = 0;
+
+  state.mode = document.querySelector('input[name="gmode"]:checked').value;
+  state.lengthMode = document.querySelector('input[name="lengthMode"]:checked').value;
+
+  if(state.lengthMode === "count"){
+    state.totalQuestions = Number($("questionCount").value);
+    state.useTimer = $("useTimer").checked;
+    state.turnTime = Number($("turnTime").value);
+    state.overallSeconds = 0;
+  } else {
+    state.totalQuestions = Infinity; // 전체 시간이 끝날 때까지 문제 수 제한 없음
+    state.useTimer = false;          // 제한 시간 모드에서는 문제별 개별 타이머 없음
+    state.overallSeconds = Number($("overallMinutes").value) * 60;
+  }
+
+  state.qIndex = 0;
+  state.usedIndices = [];
+  state.isPaused = false;
+  state.gameOver = false;
+  $("pauseOverlay").classList.remove("show");
+  $("resultOverlay").classList.remove("show");
+  $("pauseBtn").textContent = "일시정지";
+
+  updateStatLabels();
+  showScreen("game");
+  window.scrollTo && window.scrollTo(0,0);
+
+  if(state.lengthMode === "overall") startOverallTimer(state.overallSeconds);
+  nextQuestion();
+}
+
+function goHome(){
+  stopTimer();
+  stopOverallTimer();
+  state.isPaused = false;
+  $("pauseOverlay").classList.remove("show");
+  $("pauseBtn").textContent = "일시정지";
+  $("resultOverlay").classList.remove("show");
+  showScreen("setup");
+}
+
+function updateStatLabels(){
+  if(state.lengthMode === "overall"){
+    $("timerLabel").textContent = "남은 전체 시간";
+    $("progressLabel").textContent = "푼 문제 수";
+  } else {
+    $("timerLabel").textContent = "남은 시간";
+    $("progressLabel").textContent = "문제 진행";
+  }
+}
+
+/* ============================================================
+   전체 제한 시간 타이머 (제한 시간 모드 전용)
+   ============================================================ */
+function startOverallTimer(seconds){
+  stopOverallTimer();
+  state.overallTimeLeft = seconds;
+  updateOverallTimerDisplay();
+  state.overallEnd = performance.now() + seconds*1000;
+  state.overallTimerId = setInterval(()=>{
+    state.overallTimeLeft = Math.max(0, (state.overallEnd - performance.now())/1000);
+    updateOverallTimerDisplay();
+    if(state.overallTimeLeft <= 0){
+      stopOverallTimer();
+      if(!state.gameOver) finishGame();
+    }
+  }, 150);
+}
+function stopOverallTimer(){ if(state.overallTimerId) clearInterval(state.overallTimerId); state.overallTimerId=null; }
+function updateOverallTimerDisplay(){
+  if(state.lengthMode !== "overall") return;
+  const total = Math.ceil(state.overallTimeLeft);
+  const m = Math.floor(total/60), s = total%60;
+  $("timerValue").textContent = `${m}:${String(s).padStart(2,'0')}`;
+  $("timerBox").classList.toggle("warning", state.overallTimeLeft<=10);
+}
+
+/* ============================================================
+   문제 출제
+   ============================================================ */
+function nextQuestion(){
+  if(state.gameOver) return;
+  if(state.lengthMode === "count" && state.qIndex >= state.totalQuestions){ return finishGame(); }
+
+  state.qIndex++;
+  state.currentSentence = pickSentence();
+  state.currentSubmode = pickSubmode();
+
+  $("promptKr").textContent = state.currentSentence.kr;
+  $("typeBadge").textContent = TYPE_LABEL[state.currentSentence.type];
+  $("progressValue").textContent = state.lengthMode === "overall"
+    ? `${state.qIndex}`
+    : `${state.qIndex} / ${state.totalQuestions}`;
+
+  hideMessage();
+  renderScoreStrip();
+  renderTurn();
+
+  if(state.currentSubmode === "type"){
+    $("typingPanel").style.display = "";
+    $("arrangePanel").style.display = "none";
+    $("typingInput").value = "";
+    $("typingInput").disabled = false;
+    setTimeout(()=>{ try{ $("typingInput").focus(); }catch{} }, 50);
+  } else {
+    $("typingPanel").style.display = "none";
+    $("arrangePanel").style.display = "";
+    setupArrangeQuestion();
+  }
+
+  $("submitBtn").disabled = false;
+  $("skipBtn").disabled = false;
+
+  if(state.lengthMode === "overall"){
+    $("timerBox").style.visibility = "visible"; // 전체 타이머는 startGame에서 이미 시작되어 계속 돌아감
+  } else if(state.useTimer){
+    $("timerBox").style.visibility = "visible";
+    startTimer(state.turnTime);
+  } else {
+    $("timerBox").style.visibility = "hidden";
+  }
+}
+
+function renderTurn(){
+  $("currentPlayer").textContent = state.players[state.current];
+  const nextIdx = (state.current + 1) % state.players.length;
+  $("nextUpHint").textContent = state.players.length > 1 ? `다음: ${state.players[nextIdx]}` : "";
+}
+
+function renderScoreStrip(){
+  $("scoreStrip").innerHTML = state.players.map((name,i)=>
+    `<span class="score-chip ${i===state.current?'current':''}">${escapeHtml(name)}<span class="pts">${state.score[i]}점</span></span>`
+  ).join("");
+}
+
+function advanceTurn(){
+  state.current = (state.current + 1) % state.players.length;
+}
+
+/* ============================================================
+   타이머
+   ============================================================ */
+function startTimer(seconds){
+  stopTimer();
+  state.timeLeft = seconds;
+  updateTimer();
+  state.timerEnd = performance.now() + seconds*1000;
+  let prev = Math.ceil(state.timeLeft);
+  state.timerId = setInterval(()=>{
+    state.timeLeft = Math.max(0, (state.timerEnd - performance.now())/1000);
+    updateTimer();
+    const sec = Math.ceil(state.timeLeft);
+    if(sec !== prev){ prev = sec; if(sec>0 && sec<=5) beep(sec<=3?850:620,.07,.09); }
+    if(state.timeLeft <= 0){ stopTimer(); handleTimeout(); }
+  }, 80);
+}
+function stopTimer(){ if(state.timerId) clearInterval(state.timerId); state.timerId=null; }
+function updateTimer(){
+  $("timerValue").textContent = Math.ceil(state.timeLeft);
+  $("timerBox").classList.toggle("warning", state.timeLeft<=5);
+}
+function handleTimeout(){
+  if(state.gameOver || state.checking) return;
+  showMessage(`시간 초과! 정답: ${state.currentSentence.en}`, "error");
+  beep(220,.18,.12);
+  lockInputs();
+  setTimeout(()=>{ if(state.gameOver) return; advanceTurn(); nextQuestion(); }, 1600);
+}
+
+/* ============================================================
+   일시정지
+   ============================================================ */
+function togglePause(){
+  if(state.gameOver) return;
+  if(!state.isPaused){
+    state.isPaused = true;
+    state.pausedTimeLeft = state.timeLeft;
+    stopTimer();
+    if(state.lengthMode === "overall"){
+      state.pausedOverallLeft = state.overallTimeLeft;
+      stopOverallTimer();
+    }
+    lockInputs();
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "계속하기";
+  } else {
+    state.isPaused = false;
+    unlockInputs();
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "일시정지";
+    if(state.lengthMode === "count" && state.useTimer) startTimer(state.pausedTimeLeft);
+    if(state.lengthMode === "overall") startOverallTimer(state.pausedOverallLeft);
+  }
+}
+function lockInputs(){
+  $("typingInput").disabled = true;
+  $("submitBtn").disabled = true;
+  $("skipBtn").disabled = true;
+}
+function unlockInputs(){
+  if(state.isPaused) return;
+  $("typingInput").disabled = false;
+  $("submitBtn").disabled = false;
+  $("skipBtn").disabled = false;
+}
+
+/* ============================================================
+   타자 치기 채점
+   ============================================================ */
+function normalizeSentence(s){
+  return String(s||"").trim().replace(/\s+/g," ").toLowerCase().replace(/[.?!]+$/,"");
+}
+function checkTypingAnswer(){
+  const raw = $("typingInput").value;
+  const correct = normalizeSentence(raw) === normalizeSentence(state.currentSentence.en);
+  handleResult(correct);
+}
+
+/* ============================================================
+   단어 배열 (드래그 앤 드롭)
+   ============================================================ */
+function setupArrangeQuestion(){
+  const words = state.currentSentence.en.split(" ");
+  let order = words.map((w,i)=>({id:`c${i}_${Math.random().toString(36).slice(2,7)}`, text:w}));
+  state.chunkMap = {};
+  order.forEach(c=>{ state.chunkMap[c.id] = c.text; });
+
+  let shuffled = shuffle(order);
+  if(order.length > 1){
+    let tries = 0;
+    while(shuffled.every((c,i)=>c.id===order[i].id) && tries < 10){ shuffled = shuffle(order); tries++; }
+  }
+  state.bank = shuffled.map(c=>c.id);
+  state.answer = [];
+  renderZones();
+}
+
+function renderZones(){
+  $("wordBank").innerHTML = state.bank.map(id=>chipHtml(id)).join("");
+  $("answerZone").innerHTML = state.answer.map(id=>chipHtml(id)).join("");
+  attachChipEvents();
+  maybeAutoSubmitArrange();
+}
+
+/* 조각을 모두 배열하면 자동으로 정답 확인으로 넘어갑니다. */
+function maybeAutoSubmitArrange(){
+  if(state.currentSubmode !== "arrange") return;
+  if(state.isPaused || state.checking || state.gameOver) return;
+  if(!state.currentSentence) return;
+  const total = state.currentSentence.en.split(" ").length;
+  if(total > 0 && state.answer.length === total){
+    setTimeout(()=>{
+      if(state.isPaused || state.checking || state.gameOver) return;
+      if(state.currentSubmode === "arrange" && state.answer.length === total){
+        checkArrangeAnswer();
+      }
+    }, 350);
+  }
+}
+function chipHtml(id){
+  return `<span class="word-chip" draggable="true" data-id="${id}">${escapeHtml(state.chunkMap[id])}</span>`;
+}
+
+function attachChipEvents(){
+  document.querySelectorAll(".word-chip").forEach(chip=>{
+    chip.addEventListener("dragstart", onDragStart);
+    chip.addEventListener("dragend", onDragEnd);
+    chip.addEventListener("click", onChipClick);
+  });
+}
+
+let draggingId = null;
+function onDragStart(e){
+  draggingId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add("dragging");
+  try{ e.dataTransfer.setData("text/plain", draggingId); e.dataTransfer.effectAllowed = "move"; }catch{}
+}
+function onDragEnd(e){
+  e.currentTarget.classList.remove("dragging");
+  draggingId = null;
+  $("wordBank").classList.remove("drag-over");
+  $("answerZone").classList.remove("drag-over");
+}
+function onChipClick(e){
+  if(state.isPaused || state.checking) return;
+  const id = e.currentTarget.dataset.id;
+  if(state.answer.includes(id)){
+    state.answer = state.answer.filter(x=>x!==id);
+    state.bank.push(id);
+  } else if(state.bank.includes(id)){
+    state.bank = state.bank.filter(x=>x!==id);
+    state.answer.push(id);
+  }
+  renderZones();
+}
+
+function getDragAfterElement(container, x, y){
+  const els = [...container.querySelectorAll(".word-chip:not(.dragging)")];
+  return els.reduce((closest, child)=>{
+    const box = child.getBoundingClientRect();
+    const sameRow = y >= box.top && y <= box.bottom;
+    const offsetX = x - box.left - box.width/2;
+    if(sameRow && offsetX < 0 && offsetX > closest.offset){ return {offset:offsetX, element:child}; }
+    return closest;
+  }, {offset:Number.NEGATIVE_INFINITY, element:null}).element;
+}
+
+function setupDropZone(zoneEl, targetArrName){
+  zoneEl.addEventListener("dragover", e=>{
+    e.preventDefault();
+    zoneEl.classList.add("drag-over");
+  });
+  zoneEl.addEventListener("dragleave", ()=> zoneEl.classList.remove("drag-over"));
+  zoneEl.addEventListener("drop", e=>{
+    e.preventDefault();
+    zoneEl.classList.remove("drag-over");
+    const id = draggingId || (e.dataTransfer && e.dataTransfer.getData("text/plain"));
+    if(!id) return;
+    if(state.isPaused || state.checking) return;
+
+    state.bank = state.bank.filter(x=>x!==id);
+    state.answer = state.answer.filter(x=>x!==id);
+
+    if(targetArrName === "answer"){
+      const after = getDragAfterElement(zoneEl, e.clientX, e.clientY);
+      if(after){
+        const idx = state.answer.indexOf(after.dataset.id);
+        state.answer.splice(idx, 0, id);
+      } else {
+        state.answer.push(id);
+      }
+    } else {
+      state.bank.push(id);
+    }
+    renderZones();
+  });
+}
+setupDropZone($("wordBank"), "bank");
+setupDropZone($("answerZone"), "answer");
+
+$("shuffleBtn").addEventListener("click", ()=>{
+  state.bank = shuffle(state.bank);
+  renderZones();
+});
+$("resetBtn").addEventListener("click", ()=>{
+  state.bank = [...state.bank, ...state.answer];
+  state.answer = [];
+  renderZones();
+});
+
+function checkArrangeAnswer(){
+  if(state.answer.length !== state.currentSentence.en.split(" ").length){
+    showMessage("아직 모든 조각을 배열하지 않았어요.", "error");
+    return;
+  }
+  const built = state.answer.map(id=>state.chunkMap[id]).join(" ");
+  const correct = built === state.currentSentence.en;
+  handleResult(correct);
+}
+
+/* ============================================================
+   결과 처리
+   ============================================================ */
+function handleResult(correct){
+  if(state.gameOver || state.checking) return;
+  state.checking = true;
+  stopTimer();
+  lockInputs();
+
+  if(correct){
+    state.score[state.current]++;
+    showMessage("정답이에요!", "success");
+    beep(880,.1,.1);
+  } else {
+    showMessage(`아쉬워요! 정답: ${state.currentSentence.en}`, "error");
+    beep(240,.16,.1);
+  }
+  renderScoreStrip();
+
+  setTimeout(()=>{
+    state.checking = false;
+    if(state.gameOver) return;
+    advanceTurn();
+    nextQuestion();
+  }, 1500);
+}
+
+function skipQuestion(){
+  if(state.gameOver || state.checking) return;
+  state.checking = true;
+  stopTimer();
+  lockInputs();
+  showMessage(`통과! 정답: ${state.currentSentence.en}`, "");
+  setTimeout(()=>{
+    state.checking = false;
+    if(state.gameOver) return;
+    advanceTurn();
+    nextQuestion();
+  }, 1300);
+}
+
+function showMessage(text, type){
+  const el = $("message");
+  el.textContent = text;
+  el.className = `message${type?` ${type}`:""}`;
+  el.style.display = "block";
+}
+function hideMessage(){
+  const el = $("message");
+  el.style.display = "none";
+  el.textContent = "";
+  el.className = "message";
+}
+
+/* ============================================================
+   게임 종료
+   ============================================================ */
+function finishGame(){
+  state.gameOver = true;
+  stopTimer();
+  stopOverallTimer();
+  const maxScore = Math.max(...state.score);
+  const ranking = state.players.map((name,i)=>({name, score:state.score[i]}))
+    .sort((a,b)=>b.score-a.score);
+
+  $("resultTitle").textContent = maxScore>0 ? "게임 종료" : "게임 종료!";
+  $("finalList").innerHTML = ranking.map((p,i)=>
+    `<div class="final-row ${p.score===maxScore && maxScore>0 ? 'winner':''}">
+       <span class="rank">${i+1}</span>
+       <span>${escapeHtml(p.name)}</span>
+       <span class="pts">${p.score}점</span>
+     </div>`
+  ).join("");
+  $("resultOverlay").classList.add("show");
+}
+
+/* ============================================================
+   이벤트 바인딩
+   ============================================================ */
+$("startBtn").addEventListener("click", startGame);
+$("submitBtn").addEventListener("click", ()=>{
+  if(state.isPaused || state.checking) return;
+  if(state.currentSubmode === "type") checkTypingAnswer();
+  else checkArrangeAnswer();
+});
+$("skipBtn").addEventListener("click", skipQuestion);
+$("pauseBtn").addEventListener("click", togglePause);
+$("resumeBtn").addEventListener("click", togglePause);
+$("homeBtn").addEventListener("click", goHome);
+$("againBtn").addEventListener("click", ()=>{ $("resultOverlay").classList.remove("show"); startGame(); });
+$("toSetupBtn").addEventListener("click", ()=>{ $("resultOverlay").classList.remove("show"); goHome(); });
+
+$("soundBtn").addEventListener("click", ()=>{
+  state.soundOn = !state.soundOn;
+  $("soundBtn").textContent = state.soundOn ? "소리 켬" : "소리 끔";
+});
+
+$("typingInput").addEventListener("keydown", e=>{
+  if(e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    if(!state.isPaused && !state.checking) checkTypingAnswer();
+  }
+});
+
+$("useTimer").addEventListener("change", ()=>{
+  $("turnTime").disabled = !$("useTimer").checked;
+});
+</script>
+</body>
+</html>
