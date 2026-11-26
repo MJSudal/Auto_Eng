@@ -157,7 +157,7 @@ input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(
 /* 문장 모음집 */
 .bank-count{font-size:14px;color:var(--muted);font-weight:500;margin-left:8px}
 .bank-type-counts{color:var(--muted);font-size:14px;margin-top:2px}
-.add-sentence-grid{display:grid;grid-template-columns:1.3fr 1.3fr .8fr auto;gap:10px;align-items:end;margin-top:14px}
+.add-sentence-grid{display:grid;grid-template-columns:1.3fr 1.3fr .7fr .9fr auto;gap:10px;align-items:end;margin-top:14px}
 .add-sentence-grid button{height:46px;white-space:nowrap}
 .bulk-add{margin-top:16px;border:1px solid var(--line);border-radius:var(--r-ctl);padding:12px 14px;background:var(--bg)}
 .bulk-add summary{cursor:pointer;font-weight:600;font-size:15px}
@@ -267,6 +267,23 @@ label{color:#4e5968}
 .explosion-overlay .btn-action{background:#fff;color:var(--ink)}
 .explosion-overlay .btn-secondary{background:rgba(255,255,255,.18);color:#fff}
 .explosion-overlay .btn-secondary:hover{background:rgba(255,255,255,.28)}
+
+/* ===== 단계 선택 · 팀전 ===== */
+.field-note{margin:-4px 0 10px;color:var(--muted);font-size:14px}
+.stage-chip small{margin-left:6px;font-weight:500;opacity:.75}
+.sub-settings{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.player-row.has-team{grid-template-columns:auto 1fr 96px}
+.player-row .team-select{min-height:44px;padding:8px 10px}
+.team-names{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.team-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.bank-stage-badge{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;background:#f2f4f6;color:#4e5968}
+.bank-badges{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.bank-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.score-chip .members{margin-left:6px;font-size:12px;font-weight:500;color:var(--muted)}
+.final-row .members{display:block;font-size:13px;font-weight:500;color:var(--muted)}
+.final-row.team-row>span:nth-child(2){flex:1}
+.final-sub{margin:16px 0 6px;font-size:14px;font-weight:600;color:var(--muted);text-align:left}
+@media(max-width:760px){.add-sentence-grid{grid-template-columns:1fr 1fr}.player-row.has-team{grid-template-columns:auto 1fr 84px}}
 </style>
 </head>
 <body>
@@ -306,6 +323,16 @@ label{color:#4e5968}
             </select>
           </div>
           <div>
+            <label for="addStage">단계</label>
+            <select id="addStage">
+              <option value="0">단계 없음</option>
+              <option value="1">1단계 현재형</option>
+              <option value="2">2단계 과거형</option>
+              <option value="3">3단계 의문사</option>
+              <option value="4">4단계 to부정사·동명사</option>
+            </select>
+          </div>
+          <div>
             <button class="btn-action" id="addSentenceBtn" type="button">+ 추가</button>
           </div>
         </div>
@@ -313,9 +340,9 @@ label{color:#4e5968}
         <details class="bulk-add">
           <summary>여러 문장 한꺼번에 추가하기</summary>
           <div class="help" style="margin-top:8px">
-            한 줄에 문장 하나씩, <code>한국어 뜻 | 영어 문장 | 유형</code> 형식으로 입력하세요. 유형(pos/neg/q)은 생략하면 자동으로 판별해요.<br>
+            한 줄에 문장 하나씩, <code>한국어 뜻 | 영어 문장 | 유형 | 단계</code> 형식으로 입력하세요. 유형(pos/neg/q)은 생략하면 자동으로 판별하고, 단계(1~4)는 생략하면 '단계 없음'이에요.<br>
             예시)<br>
-            <code>나는 매일 아침을 먹는다. | I eat breakfast every day. | pos</code><br>
+            <code>나는 매일 아침을 먹는다. | I eat breakfast every day. | pos | 1</code><br>
             <code>그는 숙제를 하지 않았다. | He didn't do his homework.</code>
           </div>
           <textarea id="bulkInput" rows="6" placeholder="한 줄에 하나씩 입력하세요"></textarea>
@@ -334,18 +361,47 @@ label{color:#4e5968}
           </div>
           <button class="btn-secondary danger-text" id="clearAllBtn" type="button">전체 삭제</button>
         </div>
+        <div class="bank-actions">
+          <div class="choice-row" id="bankFilterStage">
+            <label class="choice-chip small"><input type="checkbox" value="1" checked><span>1단계</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="2" checked><span>2단계</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="3" checked><span>3단계</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="4" checked><span>4단계</span></label>
+            <label class="choice-chip small"><input type="checkbox" value="0" checked><span>단계 없음</span></label>
+          </div>
+          <button class="btn-secondary" id="loadDefaultsBtn" type="button">기본 문장 480개 넣기</button>
+        </div>
         <div id="bankList" class="bank-list"></div>
         <div id="bankMoreNotice" class="bank-more-notice"></div>
       </div>
 
       <div class="field">
         <h2>플레이어</h2>
-        <label for="playerCount">인원 (최대 8명)</label>
+        <label>경기 방식</label>
+        <div class="choice-row" id="teamModeChoice">
+          <label class="choice-chip"><input type="radio" name="teamMode" value="solo" checked><span>개인전</span></label>
+          <label class="choice-chip"><input type="radio" name="teamMode" value="team"><span>팀전</span></label>
+        </div>
+        <label for="playerCount" style="margin-top:14px">인원 (최대 8명)</label>
         <select id="playerCount">
           <option value="1">1명</option><option value="2" selected>2명</option><option value="3">3명</option>
           <option value="4">4명</option><option value="5">5명</option><option value="6">6명</option>
           <option value="7">7명</option><option value="8">8명</option>
         </select>
+        <div id="teamSettings" class="sub-settings" style="display:none">
+          <label for="teamCount">팀 수</label>
+          <select id="teamCount"><option value="2" selected>2팀</option><option value="3">3팀</option><option value="4">4팀</option></select>
+          <label style="margin-top:14px">팀 나누는 방법</label>
+          <div class="choice-row" id="teamAssignChoice">
+            <label class="choice-chip"><input type="radio" name="teamAssign" value="manual" checked><span>선생님이 나누기</span></label>
+            <label class="choice-chip"><input type="radio" name="teamAssign" value="random"><span>랜덤으로 나누기</span></label>
+          </div>
+          <div id="teamNames" class="team-names"></div>
+          <div class="team-tools">
+            <button class="btn-secondary" id="shuffleTeamsBtn" type="button">팀 다시 섞기</button>
+            <span id="teamHint" class="help" style="margin:0"></span>
+          </div>
+        </div>
         <div id="playerList" class="player-list"></div>
       </div>
 
@@ -368,6 +424,19 @@ label{color:#4e5968}
           <label class="choice-chip"><input type="checkbox" value="neg" checked><span>부정문</span></label>
           <label class="choice-chip"><input type="checkbox" value="q" checked><span>의문문</span></label>
         </div>
+      </div>
+
+      <div class="field">
+        <h2>출제 단계</h2>
+        <label>출제할 단계 (여러 개 선택 가능)</label>
+        <div class="choice-row" id="stageChoice">
+          <label class="choice-chip stage-chip"><input type="checkbox" value="1" checked><span>1단계 현재형<small data-stage-count="1"></small></span></label>
+          <label class="choice-chip stage-chip"><input type="checkbox" value="2" checked><span>2단계 과거형<small data-stage-count="2"></small></span></label>
+          <label class="choice-chip stage-chip"><input type="checkbox" value="3" checked><span>3단계 의문사<small data-stage-count="3"></small></span></label>
+          <label class="choice-chip stage-chip"><input type="checkbox" value="4" checked><span>4단계 to부정사·동명사<small data-stage-count="4"></small></span></label>
+          <label class="choice-chip stage-chip"><input type="checkbox" value="0" checked><span>단계 없음<small data-stage-count="0"></small></span></label>
+        </div>
+        <div class="help" id="poolHint"></div>
       </div>
 
       <div class="field">
@@ -413,10 +482,12 @@ label{color:#4e5968}
           <li>맨 위에 한국어 뜻이 나오면, 그 뜻에 맞는 영어 문장을 완성하세요.</li>
           <li>타자 치기: 입력창에 영어 문장을 직접 타이핑합니다. (대소문자는 구분하지 않고, 마침표/물음표는 없어도 정답 처리돼요)</li>
           <li>단어 배열: 가운데 단어 조각을 마우스로 드래그해서 맨 아래 칸에 순서대로 놓으세요. (조각을 클릭해도 이동돼요)</li>
-          <li>정답을 맞히면 점수 1점을 얻고 다음 사람 차례로 넘어갑니다.</li>
+          <li>출제 단계는 여러 개를 함께 고를 수 있어요. 선택한 단계의 문장만 섞여서 나옵니다.</li>
+          <li>팀전은 팀이 번갈아 문제를 풀고, 팀 안에서는 돌아가며 풉니다. 팀 점수가 가장 높은 팀이 우승해요.</li>
+          <li>정답을 맞히면 점수 1점을 얻고 다음 차례로 넘어갑니다.</li>
           <li>'문제 수로 정하기'는 정해진 문제 수를 다 풀면 끝나고, '제한 시간 안에 최대한 많이'는 전체 시간이 끝날 때까지 계속 문제가 나와요.</li>
           <li>풀기 어려우면 '통과' 버튼으로 다음 사람에게 넘길 수 있어요.</li>
-          <li>게임이 끝나면 점수가 가장 높은 사람이 우승합니다.</li>
+          <li>게임이 끝나면 점수가 가장 높은 사람(팀전은 팀)이 우승합니다.</li>
         </ol>
       </div>
 
@@ -500,6 +571,11 @@ label{color:#4e5968}
    문장 저장소 (선생님이 직접 등록, localStorage에 최대 3,000개 저장)
    ============================================================ */
 const TYPE_LABEL = {pos:"긍정문", neg:"부정문", q:"의문문"};
+const STAGE_LABEL = {0:"단계 없음", 1:"1단계 현재형", 2:"2단계 과거형", 3:"3단계 의문사", 4:"4단계 to부정사·동명사"};
+const STAGE_SHORT = {0:"", 1:"1단계", 2:"2단계", 3:"3단계", 4:"4단계"};
+function normStage(v){ const n = Number(v); return [1,2,3,4].includes(n) ? n : 0; }
+const DEFAULT_SENTENCES = [[1,"pos","나는 초등학교 6학년이다.","I am a sixth grader."],[1,"pos","그녀는 우리 반 반장이다.","She is the class president."],[1,"pos","우리는 좋은 친구이다.","We are good friends."],[1,"pos","그들은 지금 도서관에 있다.","They are in the library now."],[1,"pos","이 가방은 매우 무겁다.","This bag is very heavy."],[1,"pos","내 동생은 일곱 살이다.","My brother is seven years old."],[1,"pos","오늘은 날씨가 맑다.","It is sunny today."],[1,"pos","너는 정말 친절하다.","You are really kind."],[1,"pos","우리 선생님은 매우 다정하시다.","Our teacher is very friendly."],[1,"pos","그 아이들은 운동장에 있다.","The children are on the playground."],[1,"pos","나는 매일 아침 7시에 일어난다.","I get up at seven every morning."],[1,"pos","그는 학교에 걸어서 간다.","He walks to school."],[1,"pos","우리 엄마는 저녁을 요리하신다.","My mother cooks dinner."],[1,"pos","나는 점심으로 샌드위치를 먹는다.","I eat a sandwich for lunch."],[1,"pos","그녀는 방과 후에 피아노를 친다.","She plays the piano after school."],[1,"pos","우리는 영어를 열심히 공부한다.","We study English hard."],[1,"pos","아버지는 매일 신문을 읽으신다.","My father reads the newspaper every day."],[1,"pos","그들은 주말마다 축구를 한다.","They play soccer on weekends."],[1,"pos","내 여동생은 고양이를 좋아한다.","My sister likes cats."],[1,"pos","그 가게는 아침 9시에 문을 연다.","The store opens at nine in the morning."],[1,"pos","나는 저녁마다 숙제를 한다.","I do my homework every evening."],[1,"pos","그는 버스를 타고 학교에 간다.","He goes to school by bus."],[1,"pos","우리 개는 공원에서 달린다.","Our dog runs in the park."],[1,"pos","새들이 하늘에서 노래한다.","Birds sing in the sky."],[1,"pos","Mina는 매일 우유를 마신다.","Mina drinks milk every day."],[1,"pos","우리는 점심시간에 운동장에서 논다.","We play on the playground at lunch time."],[1,"pos","그 버스는 8시에 도착한다.","The bus arrives at eight."],[1,"pos","나는 토요일마다 할머니를 방문한다.","I visit my grandmother on Saturdays."],[1,"pos","우리 형은 컴퓨터 게임을 한다.","My brother plays computer games."],[1,"pos","그녀는 매일 일기를 쓴다.","She writes in her diary every day."],[1,"pos","내 친구들은 과학을 좋아한다.","My friends like science."],[1,"pos","나는 자기 전에 이를 닦는다.","I brush my teeth before bed."],[1,"pos","선생님은 우리에게 영어를 가르치신다.","Our teacher teaches us English."],[1,"pos","그는 매일 아침 우유를 마신다.","He drinks milk every morning."],[1,"pos","이 책은 매우 재미있다.","This book is very interesting."],[1,"pos","내 방은 작지만 깨끗하다.","My room is small but clean."],[1,"pos","저 꽃들은 정말 아름답다.","Those flowers are really beautiful."],[1,"pos","우리 부모님은 오늘 집에 계신다.","My parents are at home today."],[1,"pos","그녀는 겨울에 스키를 탄다.","She skis in winter."],[1,"pos","나는 방과 후에 도서관에 간다.","I go to the library after school."],[1,"neg","나는 피곤하지 않다.","I am not tired."],[1,"neg","그녀는 우리 반이 아니다.","She is not in our class."],[1,"neg","우리는 지금 바쁘지 않다.","We are not busy now."],[1,"neg","그들은 우리 이웃이 아니다.","They are not our neighbors."],[1,"neg","이 문제는 어렵지 않다.","This question is not difficult."],[1,"neg","오늘은 날씨가 춥지 않다.","It is not cold today."],[1,"neg","내 동생은 학교에 없다.","My brother is not at school."],[1,"neg","네 말은 틀리지 않다.","You are not wrong."],[1,"neg","그 상자는 비어 있지 않다.","The box is not empty."],[1,"neg","우리는 배고프지 않다.","We are not hungry."],[1,"neg","나는 아침을 먹지 않는다.","I don't eat breakfast."],[1,"neg","그는 학교에 걸어가지 않는다.","He doesn't walk to school."],[1,"neg","우리 엄마는 커피를 마시지 않으신다.","My mother doesn't drink coffee."],[1,"neg","나는 매운 음식을 좋아하지 않는다.","I don't like spicy food."],[1,"neg","그녀는 피아노를 치지 않는다.","She doesn't play the piano."],[1,"neg","우리는 주말에 학교에 가지 않는다.","We don't go to school on weekends."],[1,"neg","아버지는 TV를 많이 보지 않으신다.","My father doesn't watch TV much."],[1,"neg","그들은 축구를 하지 않는다.","They don't play soccer."],[1,"neg","내 여동생은 우유를 마시지 않는다.","My sister doesn't drink milk."],[1,"neg","그 가게는 일요일에 문을 열지 않는다.","The store doesn't open on Sundays."],[1,"neg","나는 숙제를 잊지 않는다.","I don't forget my homework."],[1,"neg","그는 버스를 타지 않는다.","He doesn't take the bus."],[1,"neg","우리 개는 짖지 않는다.","Our dog doesn't bark."],[1,"neg","고양이는 물을 좋아하지 않는다.","Cats don't like water."],[1,"neg","Mina는 늦게 자지 않는다.","Mina doesn't sleep late."],[1,"neg","우리는 교실에서 뛰지 않는다.","We don't run in the classroom."],[1,"neg","그 버스는 이곳에 서지 않는다.","The bus doesn't stop here."],[1,"neg","나는 형이 없다.","I don't have a brother."],[1,"neg","우리 형은 야채를 먹지 않는다.","My brother doesn't eat vegetables."],[1,"neg","그녀는 거짓말을 하지 않는다.","She doesn't tell lies."],[1,"neg","내 친구들은 수학을 좋아하지 않는다.","My friends don't like math."],[1,"neg","나는 우산이 없다.","I don't have an umbrella."],[1,"neg","선생님은 숙제를 많이 내지 않으신다.","Our teacher doesn't give much homework."],[1,"neg","그는 영어를 잘하지 못한다.","He doesn't speak English well."],[1,"neg","이 시계는 작동하지 않는다.","This clock doesn't work."],[1,"neg","나는 이 노래를 알지 못한다.","I don't know this song."],[1,"neg","그 아이들은 비 오는 날에 나가지 않는다.","The children don't go out on rainy days."],[1,"neg","그녀는 고기를 먹지 않는다.","She doesn't eat meat."],[1,"neg","우리는 학교에서 휴대폰을 쓰지 않는다.","We don't use phones at school."],[1,"neg","그들은 지금 집에 없다.","They are not at home now."],[1,"q","너는 6학년이니?","Are you a sixth grader?"],[1,"q","그녀는 네 친구니?","Is she your friend?"],[1,"q","그들은 지금 도서관에 있니?","Are they in the library now?"],[1,"q","이 가방은 무겁니?","Is this bag heavy?"],[1,"q","오늘 날씨가 맑니?","Is it sunny today?"],[1,"q","너희 선생님은 친절하시니?","Is your teacher kind?"],[1,"q","너는 배고프니?","Are you hungry?"],[1,"q","그 아이들은 운동장에 있니?","Are the children on the playground?"],[1,"q","네 동생은 일곱 살이니?","Is your brother seven years old?"],[1,"q","우리 늦었니?","Are we late?"],[1,"q","너는 매일 아침 일찍 일어나니?","Do you get up early every morning?"],[1,"q","그는 학교에 걸어가니?","Does he walk to school?"],[1,"q","너희 엄마는 요리를 하시니?","Does your mother cook?"],[1,"q","너는 영어를 좋아하니?","Do you like English?"],[1,"q","그녀는 피아노를 치니?","Does she play the piano?"],[1,"q","너희는 주말에 축구를 하니?","Do you play soccer on weekends?"],[1,"q","너희 아버지는 신문을 읽으시니?","Does your father read the newspaper?"],[1,"q","그들은 같은 학교에 다니니?","Do they go to the same school?"],[1,"q","네 여동생은 고양이를 좋아하니?","Does your sister like cats?"],[1,"q","그 가게는 일요일에 문을 여니?","Does the store open on Sundays?"],[1,"q","너는 매일 숙제를 하니?","Do you do your homework every day?"],[1,"q","그는 버스를 타고 학교에 가니?","Does he go to school by bus?"],[1,"q","너희 개는 공원에서 달리니?","Does your dog run in the park?"],[1,"q","너는 점심으로 우유를 마시니?","Do you drink milk for lunch?"],[1,"q","Mina는 방과 후에 도서관에 가니?","Does Mina go to the library after school?"],[1,"q","너희는 점심시간에 운동장에서 노니?","Do you play on the playground at lunch time?"],[1,"q","그 버스는 8시에 도착하니?","Does the bus arrive at eight?"],[1,"q","너는 형제가 있니?","Do you have a brother?"],[1,"q","네 형은 컴퓨터 게임을 하니?","Does your brother play computer games?"],[1,"q","그녀는 일기를 쓰니?","Does she write in a diary?"],[1,"q","네 친구들은 과학을 좋아하니?","Do your friends like science?"],[1,"q","너는 자기 전에 이를 닦니?","Do you brush your teeth before bed?"],[1,"q","선생님은 너희에게 영어를 가르치시니?","Does your teacher teach you English?"],[1,"q","너는 우산이 있니?","Do you have an umbrella?"],[1,"q","이 책은 재미있니?","Is this book interesting?"],[1,"q","네 방은 깨끗하니?","Is your room clean?"],[1,"q","저 꽃들은 아름답니?","Are those flowers beautiful?"],[1,"q","너희 부모님은 오늘 집에 계시니?","Are your parents at home today?"],[1,"q","그는 겨울에 스키를 타니?","Does he ski in winter?"],[1,"q","너는 이 노래를 아니?","Do you know this song?"],[2,"pos","나는 어제 매우 피곤했다.","I was very tired yesterday."],[2,"pos","그녀는 작년에 5학년이었다.","She was a fifth grader last year."],[2,"pos","우리는 지난 주말에 공원에 있었다.","We were in the park last weekend."],[2,"pos","그들은 어제 학교에 늦었다.","They were late for school yesterday."],[2,"pos","그 영화는 정말 재미있었다.","The movie was really fun."],[2,"pos","어제는 날씨가 흐렸다.","It was cloudy yesterday."],[2,"pos","내 동생은 어제 아팠다.","My brother was sick yesterday."],[2,"pos","우리 할머니는 젊었을 때 선생님이셨다.","My grandmother was a teacher when she was young."],[2,"pos","나는 어제 친구와 축구를 했다.","I played soccer with my friend yesterday."],[2,"pos","그는 지난밤에 숙제를 끝냈다.","He finished his homework last night."],[2,"pos","우리는 지난주에 박물관을 방문했다.","We visited a museum last week."],[2,"pos","엄마는 어제 케이크를 만드셨다.","My mother made a cake yesterday."],[2,"pos","나는 어젯밤에 일찍 잤다.","I went to bed early last night."],[2,"pos","그녀는 지난 일요일에 영화를 봤다.","She watched a movie last Sunday."],[2,"pos","우리는 어제 점심으로 피자를 먹었다.","We ate pizza for lunch yesterday."],[2,"pos","아버지는 지난 여름에 부산에 가셨다.","My father went to Busan last summer."],[2,"pos","그들은 어제 교실을 청소했다.","They cleaned the classroom yesterday."],[2,"pos","나는 도서관에서 재미있는 책을 읽었다.","I read an interesting book at the library."],[2,"pos","Tom은 어제 새 자전거를 샀다.","Tom bought a new bike yesterday."],[2,"pos","우리 개가 어제 공원에서 달렸다.","Our dog ran in the park yesterday."],[2,"pos","그녀는 지난 주말에 할머니께 전화했다.","She called her grandmother last weekend."],[2,"pos","나는 어제 일기를 썼다.","I wrote in my diary yesterday."],[2,"pos","우리는 어제 학교에서 노래를 불렀다.","We sang songs at school yesterday."],[2,"pos","선생님은 어제 우리에게 새 단어를 가르쳐 주셨다.","Our teacher taught us new words yesterday."],[2,"pos","그는 어젯밤에 친구에게 편지를 썼다.","He wrote a letter to his friend last night."],[2,"pos","나는 지난달에 새 친구를 만났다.","I met a new friend last month."],[2,"pos","그들은 어제 눈사람을 만들었다.","They made a snowman yesterday."],[2,"pos","우리는 소풍에서 사진을 많이 찍었다.","We took many pictures on the picnic."],[2,"pos","어젯밤에 비가 많이 왔다.","It rained a lot last night."],[2,"pos","그 아이는 공을 세게 던졌다.","The boy threw the ball hard."],[2,"pos","나는 어제 우산을 가져왔다.","I brought an umbrella yesterday."],[2,"pos","그녀는 어제 열심히 공부했다.","She studied hard yesterday."],[2,"pos","우리 가족은 지난 겨울에 스키를 탔다.","My family skied last winter."],[2,"pos","나는 아침에 우유를 마셨다.","I drank milk in the morning."],[2,"pos","그는 어제 길에서 지갑을 발견했다.","He found a wallet on the street yesterday."],[2,"pos","그들은 어제 박물관에서 공룡 뼈를 봤다.","They saw dinosaur bones at the museum yesterday."],[2,"pos","나는 어제 새 신발을 신었다.","I wore new shoes yesterday."],[2,"pos","Mina는 오늘 아침에 일찍 일어났다.","Mina got up early this morning."],[2,"pos","우리는 지난 여름에 바다에서 수영했다.","We swam in the sea last summer."],[2,"pos","그는 어제 반 친구들과 함께 점심을 먹었다.","He had lunch with his classmates yesterday."],[2,"neg","나는 어제 피곤하지 않았다.","I was not tired yesterday."],[2,"neg","그녀는 어제 학교에 없었다.","She was not at school yesterday."],[2,"neg","우리는 지난 주말에 집에 없었다.","We were not at home last weekend."],[2,"neg","그들은 어제 늦지 않았다.","They were not late yesterday."],[2,"neg","그 시험은 어렵지 않았다.","The test was not difficult."],[2,"neg","어제는 날씨가 춥지 않았다.","It was not cold yesterday."],[2,"neg","내 동생은 어제 아프지 않았다.","My brother was not sick yesterday."],[2,"neg","그 영화는 재미있지 않았다.","The movie was not fun."],[2,"neg","나는 어제 축구를 하지 않았다.","I didn't play soccer yesterday."],[2,"neg","그는 숙제를 끝내지 않았다.","He didn't finish his homework."],[2,"neg","우리는 지난주에 박물관에 가지 않았다.","We didn't go to the museum last week."],[2,"neg","엄마는 어제 요리를 하지 않으셨다.","My mother didn't cook yesterday."],[2,"neg","나는 어젯밤에 일찍 자지 않았다.","I didn't go to bed early last night."],[2,"neg","그녀는 지난 일요일에 영화를 보지 않았다.","She didn't watch a movie last Sunday."],[2,"neg","우리는 어제 점심을 먹지 않았다.","We didn't eat lunch yesterday."],[2,"neg","아버지는 지난 여름에 휴가를 가지 않으셨다.","My father didn't take a vacation last summer."],[2,"neg","그들은 어제 교실을 청소하지 않았다.","They didn't clean the classroom yesterday."],[2,"neg","나는 그 책을 읽지 않았다.","I didn't read the book."],[2,"neg","Tom은 새 자전거를 사지 않았다.","Tom didn't buy a new bike."],[2,"neg","우리 개는 어제 짖지 않았다.","Our dog didn't bark yesterday."],[2,"neg","그녀는 할머니께 전화하지 않았다.","She didn't call her grandmother."],[2,"neg","나는 어제 일기를 쓰지 않았다.","I didn't write in my diary yesterday."],[2,"neg","우리는 어제 노래를 부르지 않았다.","We didn't sing songs yesterday."],[2,"neg","선생님은 어제 숙제를 내지 않으셨다.","Our teacher didn't give us homework yesterday."],[2,"neg","그는 친구에게 편지를 쓰지 않았다.","He didn't write a letter to his friend."],[2,"neg","나는 지난달에 그를 만나지 않았다.","I didn't meet him last month."],[2,"neg","그들은 눈사람을 만들지 않았다.","They didn't make a snowman."],[2,"neg","우리는 소풍에서 사진을 찍지 않았다.","We didn't take pictures on the picnic."],[2,"neg","어젯밤에는 비가 오지 않았다.","It didn't rain last night."],[2,"neg","그 아이는 공을 던지지 않았다.","The boy didn't throw the ball."],[2,"neg","나는 어제 우산을 가져오지 않았다.","I didn't bring an umbrella yesterday."],[2,"neg","그녀는 어제 공부하지 않았다.","She didn't study yesterday."],[2,"neg","우리 가족은 지난 겨울에 스키를 타지 않았다.","My family didn't ski last winter."],[2,"neg","나는 아침에 우유를 마시지 않았다.","I didn't drink milk in the morning."],[2,"neg","그는 지갑을 찾지 못했다.","He didn't find his wallet."],[2,"neg","그들은 박물관에서 공룡을 보지 못했다.","They didn't see dinosaurs at the museum."],[2,"neg","나는 어제 새 신발을 신지 않았다.","I didn't wear new shoes yesterday."],[2,"neg","Mina는 오늘 아침에 일찍 일어나지 않았다.","Mina didn't get up early this morning."],[2,"neg","우리는 지난 여름에 수영하지 않았다.","We didn't swim last summer."],[2,"neg","그는 어제 친구들과 점심을 먹지 않았다.","He didn't have lunch with his friends yesterday."],[2,"q","너는 어제 피곤했니?","Were you tired yesterday?"],[2,"q","그녀는 어제 학교에 있었니?","Was she at school yesterday?"],[2,"q","너희는 지난 주말에 공원에 있었니?","Were you in the park last weekend?"],[2,"q","그들은 어제 학교에 늦었니?","Were they late for school yesterday?"],[2,"q","그 영화는 재미있었니?","Was the movie fun?"],[2,"q","어제 날씨가 흐렸니?","Was it cloudy yesterday?"],[2,"q","네 동생은 어제 아팠니?","Was your brother sick yesterday?"],[2,"q","그 시험은 어려웠니?","Was the test difficult?"],[2,"q","너는 어제 축구를 했니?","Did you play soccer yesterday?"],[2,"q","그는 숙제를 끝냈니?","Did he finish his homework?"],[2,"q","너희는 지난주에 박물관에 갔니?","Did you go to the museum last week?"],[2,"q","엄마가 어제 케이크를 만드셨니?","Did your mother make a cake yesterday?"],[2,"q","너는 어젯밤에 일찍 잤니?","Did you go to bed early last night?"],[2,"q","그녀는 지난 일요일에 영화를 봤니?","Did she watch a movie last Sunday?"],[2,"q","너희는 어제 점심으로 피자를 먹었니?","Did you eat pizza for lunch yesterday?"],[2,"q","너희 아버지는 지난 여름에 부산에 가셨니?","Did your father go to Busan last summer?"],[2,"q","그들은 어제 교실을 청소했니?","Did they clean the classroom yesterday?"],[2,"q","너는 그 책을 읽었니?","Did you read the book?"],[2,"q","Tom은 새 자전거를 샀니?","Did Tom buy a new bike?"],[2,"q","네 개가 어제 공원에서 달렸니?","Did your dog run in the park yesterday?"],[2,"q","그녀는 할머니께 전화했니?","Did she call her grandmother?"],[2,"q","너는 어제 일기를 썼니?","Did you write in your diary yesterday?"],[2,"q","너희는 학교에서 노래를 불렀니?","Did you sing songs at school?"],[2,"q","선생님이 어제 숙제를 내주셨니?","Did your teacher give you homework yesterday?"],[2,"q","그는 친구에게 편지를 썼니?","Did he write a letter to his friend?"],[2,"q","너는 지난달에 새 친구를 만났니?","Did you meet a new friend last month?"],[2,"q","그들은 눈사람을 만들었니?","Did they make a snowman?"],[2,"q","너희는 소풍에서 사진을 찍었니?","Did you take pictures on the picnic?"],[2,"q","어젯밤에 비가 왔니?","Did it rain last night?"],[2,"q","그 아이가 공을 던졌니?","Did the boy throw the ball?"],[2,"q","너는 어제 우산을 가져왔니?","Did you bring an umbrella yesterday?"],[2,"q","그녀는 어제 열심히 공부했니?","Did she study hard yesterday?"],[2,"q","너희 가족은 지난 겨울에 스키를 탔니?","Did your family ski last winter?"],[2,"q","너는 아침에 우유를 마셨니?","Did you drink milk in the morning?"],[2,"q","그는 지갑을 찾았니?","Did he find his wallet?"],[2,"q","그들은 박물관에서 공룡을 봤니?","Did they see dinosaurs at the museum?"],[2,"q","너는 어제 새 신발을 신었니?","Did you wear new shoes yesterday?"],[2,"q","Mina는 오늘 아침에 일찍 일어났니?","Did Mina get up early this morning?"],[2,"q","너희는 지난 여름에 수영했니?","Did you swim last summer?"],[2,"q","그는 어제 반 친구들과 점심을 먹었니?","Did he have lunch with his classmates yesterday?"],[3,"pos","나는 네가 어디에 사는지 안다.","I know where you live."],[3,"pos","나는 네 이름이 뭔지 안다.","I know what your name is."],[3,"pos","그녀는 오늘이 무슨 요일인지 안다.","She knows what day it is today."],[3,"pos","나는 네 생일이 언제인지 기억한다.","I remember when your birthday is."],[3,"pos","우리는 저 소년이 누구인지 안다.","We know who that boy is."],[3,"pos","나는 그가 왜 슬픈지 안다.","I know why he is sad."],[3,"pos","그는 학교에 어떻게 가는지 말해 주었다.","He told me how he goes to school."],[3,"pos","나는 이 사과가 얼마인지 안다.","I know how much this apple is."],[3,"pos","나는 네가 무엇을 원하는지 안다.","I know what you want."],[3,"pos","그녀는 도서관이 어디에 있는지 안다.","She knows where the library is."],[3,"pos","나는 그가 언제 오는지 안다.","I know when he comes."],[3,"pos","우리는 그가 누구인지 안다.","We know who he is."],[3,"pos","나는 네가 왜 웃는지 이해한다.","I understand why you are laughing."],[3,"pos","선생님은 우리가 어디에 있는지 아신다.","Our teacher knows where we are."],[3,"pos","나는 무엇을 해야 할지 안다.","I know what to do."],[3,"pos","그는 어디로 가야 할지 안다.","He knows where to go."],[3,"pos","나는 그 가게가 어디에 있는지 말해 줄 수 있다.","I can tell you where the store is."],[3,"pos","나는 어제 무슨 일이 있었는지 기억한다.","I remember what happened yesterday."],[3,"pos","그녀는 이것이 누구의 것인지 안다.","She knows whose this is."],[3,"pos","우리는 몇 시에 시작하는지 안다.","We know what time it starts."],[3,"pos","나는 내 가방이 어디에 있는지 안다.","I know where my bag is."],[3,"pos","그는 내가 어떻게 느끼는지 안다.","He knows how I feel."],[3,"pos","나는 누가 문을 열었는지 안다.","I know who opened the door."],[3,"pos","그녀는 네가 어디에서 그것을 샀는지 안다.","She knows where you bought it."],[3,"pos","나는 네가 어떤 색을 좋아하는지 안다.","I know which color you like."],[3,"pos","우리는 그 영화가 언제 시작하는지 안다.","We know when the movie starts."],[3,"pos","나는 그가 무엇을 먹었는지 안다.","I know what he ate."],[3,"pos","그는 내가 왜 늦었는지 안다.","He knows why I was late."],[3,"pos","나는 내 선생님이 누구인지 안다.","I know who my teacher is."],[3,"pos","그녀는 어떻게 해야 하는지 안다.","She knows how to do it."],[3,"pos","나는 네가 어디에 있었는지 안다.","I know where you were."],[3,"pos","선생님은 무엇이 문제인지 아신다.","Our teacher knows what the problem is."],[3,"pos","나는 네가 어떻게 그것을 했는지 궁금하다.","I wonder how you did it."],[3,"pos","나는 그가 어디로 갔는지 궁금하다.","I wonder where he went."],[3,"pos","나는 오늘 날씨가 어떨지 궁금하다.","I wonder how the weather is today."],[3,"pos","그녀는 누가 왔는지 안다.","She knows who came."],[3,"pos","그는 우리가 왜 여기에 있는지 안다.","He knows why we are here."],[3,"pos","나는 우리가 어디서 만나는지 안다.","I know where we meet."],[3,"pos","나는 네가 무엇을 하고 있는지 안다.","I know what you are doing."],[3,"pos","우리는 그녀가 언제 떠났는지 안다.","We know when she left."],[3,"neg","나는 네가 어디에 사는지 모른다.","I don't know where you live."],[3,"neg","나는 그의 이름이 뭔지 모른다.","I don't know what his name is."],[3,"neg","그녀는 오늘이 무슨 요일인지 모른다.","She doesn't know what day it is today."],[3,"neg","나는 네 생일이 언제인지 기억하지 못한다.","I don't remember when your birthday is."],[3,"neg","우리는 저 소년이 누구인지 모른다.","We don't know who that boy is."],[3,"neg","나는 그가 왜 슬픈지 모른다.","I don't know why he is sad."],[3,"neg","그는 학교에 어떻게 가는지 말하지 않았다.","He didn't tell me how he goes to school."],[3,"neg","나는 이 사과가 얼마인지 모른다.","I don't know how much this apple is."],[3,"neg","나는 네가 무엇을 원하는지 모른다.","I don't know what you want."],[3,"neg","그녀는 도서관이 어디에 있는지 모른다.","She doesn't know where the library is."],[3,"neg","나는 그가 언제 오는지 모른다.","I don't know when he comes."],[3,"neg","우리는 그가 누구인지 모른다.","We don't know who he is."],[3,"neg","나는 네가 왜 웃는지 이해하지 못한다.","I don't understand why you are laughing."],[3,"neg","선생님은 우리가 어디에 있는지 모르신다.","Our teacher doesn't know where we are."],[3,"neg","나는 무엇을 해야 할지 모른다.","I don't know what to do."],[3,"neg","그는 어디로 가야 할지 모른다.","He doesn't know where to go."],[3,"neg","나는 그 가게가 어디에 있는지 말할 수 없다.","I can't tell you where the store is."],[3,"neg","나는 어제 무슨 일이 있었는지 기억하지 못한다.","I don't remember what happened yesterday."],[3,"neg","그녀는 이것이 누구의 것인지 모른다.","She doesn't know whose this is."],[3,"neg","우리는 몇 시에 시작하는지 모른다.","We don't know what time it starts."],[3,"neg","나는 내 가방이 어디에 있는지 모른다.","I don't know where my bag is."],[3,"neg","그는 내가 어떻게 느끼는지 모른다.","He doesn't know how I feel."],[3,"neg","나는 누가 문을 열었는지 모른다.","I don't know who opened the door."],[3,"neg","그녀는 네가 어디에서 그것을 샀는지 모른다.","She doesn't know where you bought it."],[3,"neg","나는 네가 어떤 색을 좋아하는지 모른다.","I don't know which color you like."],[3,"neg","우리는 그 영화가 언제 시작하는지 모른다.","We don't know when the movie starts."],[3,"neg","나는 그가 무엇을 먹었는지 모른다.","I don't know what he ate."],[3,"neg","그는 내가 왜 늦었는지 모른다.","He doesn't know why I was late."],[3,"neg","나는 내 선생님이 누구인지 모르겠다.","I don't know who my teacher is."],[3,"neg","그녀는 어떻게 해야 하는지 모른다.","She doesn't know how to do it."],[3,"neg","나는 네가 어디에 있었는지 모른다.","I don't know where you were."],[3,"neg","선생님은 무엇이 문제인지 모르신다.","Our teacher doesn't know what the problem is."],[3,"neg","나는 네가 어떻게 그것을 했는지 모르겠다.","I don't know how you did it."],[3,"neg","나는 그가 어디로 갔는지 모른다.","I don't know where he went."],[3,"neg","나는 오늘 날씨가 어떨지 모르겠다.","I don't know how the weather is today."],[3,"neg","그녀는 누가 왔는지 모른다.","She doesn't know who came."],[3,"neg","그는 우리가 왜 여기에 있는지 모른다.","He doesn't know why we are here."],[3,"neg","나는 우리가 어디서 만나는지 모른다.","I don't know where we meet."],[3,"neg","나는 네가 무엇을 하고 있는지 모른다.","I don't know what you are doing."],[3,"neg","우리는 그녀가 언제 떠났는지 모른다.","We don't know when she left."],[3,"q","네 이름이 뭐니?","What is your name?"],[3,"q","너는 어디에 사니?","Where do you live?"],[3,"q","오늘은 무슨 요일이니?","What day is it today?"],[3,"q","네 생일은 언제니?","When is your birthday?"],[3,"q","저 소년은 누구니?","Who is that boy?"],[3,"q","너는 왜 슬프니?","Why are you sad?"],[3,"q","너는 학교에 어떻게 가니?","How do you go to school?"],[3,"q","이 사과는 얼마니?","How much is this apple?"],[3,"q","너는 몇 살이니?","How old are you?"],[3,"q","네 가방 안에 뭐가 있니?","What is in your bag?"],[3,"q","너는 점심으로 뭘 먹었니?","What did you eat for lunch?"],[3,"q","너는 어젯밤에 어디에 있었니?","Where were you last night?"],[3,"q","그는 언제 집에 돌아오니?","When does he come home?"],[3,"q","네가 가장 좋아하는 과목은 무엇이니?","What is your favorite subject?"],[3,"q","너는 왜 어제 학교에 오지 않았니?","Why didn't you come to school yesterday?"],[3,"q","너는 방과 후에 무엇을 하니?","What do you do after school?"],[3,"q","누가 이 그림을 그렸니?","Who drew this picture?"],[3,"q","너는 몇 시에 일어나니?","What time do you get up?"],[3,"q","이 연필은 누구의 것이니?","Whose pencil is this?"],[3,"q","너는 어떤 색을 좋아하니?","Which color do you like?"],[3,"q","너희 가족은 몇 명이니?","How many people are in your family?"],[3,"q","그녀는 어디에서 영어를 공부하니?","Where does she study English?"],[3,"q","우리는 언제 만날까?","When will we meet?"],[3,"q","너는 주말에 어디에 갔니?","Where did you go on the weekend?"],[3,"q","이 책은 누구의 것이니?","Whose book is this?"],[3,"q","너는 왜 영어를 좋아하니?","Why do you like English?"],[3,"q","그는 어떻게 지내니?","How is he?"],[3,"q","오늘 날씨는 어떠니?","How is the weather today?"],[3,"q","누가 문을 열었니?","Who opened the door?"],[3,"q","너는 무슨 운동을 좋아하니?","What sport do you like?"],[3,"q","학교는 몇 시에 끝나니?","What time does school finish?"],[3,"q","너는 어디에서 그 가방을 샀니?","Where did you buy that bag?"],[3,"q","네 선생님은 누구시니?","Who is your teacher?"],[3,"q","너는 왜 웃고 있니?","Why are you laughing?"],[3,"q","이 길은 어디로 가니?","Where does this road go?"],[3,"q","너는 어떤 동물을 좋아하니?","Which animal do you like?"],[3,"q","너는 얼마나 자주 운동하니?","How often do you exercise?"],[3,"q","도서관은 어디에 있니?","Where is the library?"],[3,"q","너는 누구와 함께 점심을 먹었니?","Who did you have lunch with?"],[3,"q","너는 지금 무엇을 하고 있니?","What are you doing now?"],[4,"pos","나는 영어를 배우고 싶다.","I want to learn English."],[4,"pos","그녀는 의사가 되고 싶어 한다.","She wants to be a doctor."],[4,"pos","우리는 내일 소풍을 가기로 계획했다.","We plan to go on a picnic tomorrow."],[4,"pos","그는 노래하는 것을 좋아한다.","He likes singing."],[4,"pos","나는 책 읽는 것을 즐긴다.","I enjoy reading books."],[4,"pos","그들은 축구하는 것을 좋아한다.","They like playing soccer."],[4,"pos","내 꿈은 가수가 되는 것이다.","My dream is to be a singer."],[4,"pos","그녀는 요리하는 것을 즐긴다.","She enjoys cooking."],[4,"pos","나는 수영하는 법을 배우고 싶다.","I want to learn how to swim."],[4,"pos","우리는 공원에서 걷는 것을 좋아한다.","We like walking in the park."],[4,"pos","그는 숙제를 끝내려고 노력했다.","He tried to finish his homework."],[4,"pos","나는 그림 그리는 것을 좋아한다.","I like drawing pictures."],[4,"pos","엄마는 저녁을 만들기 시작하셨다.","My mother started to cook dinner."],[4,"pos","비가 내리기 시작했다.","It began to rain."],[4,"pos","그녀는 춤추기를 멈췄다.","She stopped dancing."],[4,"pos","나는 일찍 일어나려고 노력한다.","I try to get up early."],[4,"pos","우리는 영어로 말하는 것을 연습한다.","We practice speaking English."],[4,"pos","그는 새 자전거를 사기로 결정했다.","He decided to buy a new bike."],[4,"pos","나는 오늘 밤 숙제를 해야 한다.","I need to do my homework tonight."],[4,"pos","그녀는 친구들과 이야기하는 것을 좋아한다.","She likes talking with her friends."],[4,"pos","우리는 박물관에 가기를 희망한다.","We hope to visit the museum."],[4,"pos","나는 책을 가져오는 것을 잊었다.","I forgot to bring my book."],[4,"pos","그는 사진 찍는 것을 즐긴다.","He enjoys taking pictures."],[4,"pos","나는 내일 일찍 일어나야 한다.","I have to get up early tomorrow."],[4,"pos","그녀는 피아노 치는 것을 좋아한다.","She likes playing the piano."],[4,"pos","우리는 눈사람을 만들기 위해 밖에 나갔다.","We went out to make a snowman."],[4,"pos","나는 책을 빌리기 위해 도서관에 갔다.","I went to the library to borrow a book."],[4,"pos","그는 건강해지기 위해 매일 운동한다.","He exercises every day to stay healthy."],[4,"pos","나는 일기 쓰는 것을 좋아한다.","I like writing in my diary."],[4,"pos","그들은 함께 공부하기로 약속했다.","They promised to study together."],[4,"pos","우리는 TV 보는 것을 그만뒀다.","We stopped watching TV."],[4,"pos","나는 친구를 돕는 것을 좋아한다.","I like helping my friends."],[4,"pos","그는 자전거 타는 것을 좋아한다.","He likes riding a bike."],[4,"pos","우리는 새로운 것을 배우는 것을 즐긴다.","We enjoy learning new things."],[4,"pos","나는 먹을 것이 필요하다.","I need something to eat."],[4,"pos","그녀는 마실 물을 가져왔다.","She brought some water to drink."],[4,"pos","나는 읽을 책이 있다.","I have a book to read."],[4,"pos","그는 다음 주에 여행을 가고 싶어 한다.","He wants to take a trip next week."],[4,"pos","그녀는 눈 구경하는 것을 정말 좋아한다.","She really loves watching the snow."],[4,"pos","우리는 새 학교에서 친구를 사귀고 싶다.","We want to make friends at the new school."],[4,"neg","나는 늦게 자고 싶지 않다.","I don't want to go to bed late."],[4,"neg","그녀는 의사가 되고 싶어 하지 않는다.","She doesn't want to be a doctor."],[4,"neg","우리는 소풍을 가지 않기로 했다.","We decided not to go on a picnic."],[4,"neg","그는 노래하는 것을 좋아하지 않는다.","He doesn't like singing."],[4,"neg","나는 책 읽는 것을 즐기지 않는다.","I don't enjoy reading books."],[4,"neg","그들은 축구하는 것을 좋아하지 않는다.","They don't like playing soccer."],[4,"neg","나는 학교에 늦지 않으려고 노력한다.","I try not to be late for school."],[4,"neg","그녀는 요리하는 것을 즐기지 않는다.","She doesn't enjoy cooking."],[4,"neg","나는 수영하는 법을 모른다.","I don't know how to swim."],[4,"neg","우리는 비 오는 날에 걷는 것을 좋아하지 않는다.","We don't like walking on rainy days."],[4,"neg","그는 숙제를 끝내려고 하지 않았다.","He didn't try to finish his homework."],[4,"neg","나는 그림 그리는 것을 좋아하지 않는다.","I don't like drawing pictures."],[4,"neg","엄마는 저녁을 만들고 싶어 하지 않으셨다.","My mother didn't want to cook dinner."],[4,"neg","나는 아침에 일찍 일어나고 싶지 않다.","I don't want to get up early in the morning."],[4,"neg","그녀는 춤추는 것을 멈추지 않았다.","She didn't stop dancing."],[4,"neg","나는 숙제를 잊지 않으려고 한다.","I try not to forget my homework."],[4,"neg","우리는 영어로 말하는 것을 두려워하지 않는다.","We aren't afraid of speaking English."],[4,"neg","그는 새 자전거를 사기로 결정하지 않았다.","He didn't decide to buy a new bike."],[4,"neg","나는 오늘 밤 숙제를 할 필요가 없다.","I don't need to do my homework tonight."],[4,"neg","그녀는 친구들과 이야기하는 것을 싫어하지 않는다.","She doesn't hate talking with her friends."],[4,"neg","우리는 박물관에 가고 싶지 않다.","We don't want to visit the museum."],[4,"neg","나는 책을 가져오는 것을 잊지 않았다.","I didn't forget to bring my book."],[4,"neg","그는 사진 찍는 것을 즐기지 않는다.","He doesn't enjoy taking pictures."],[4,"neg","나는 내일 일찍 일어날 필요가 없다.","I don't have to get up early tomorrow."],[4,"neg","그녀는 피아노 치는 것을 좋아하지 않는다.","She doesn't like playing the piano."],[4,"neg","우리는 눈사람을 만들고 싶지 않았다.","We didn't want to make a snowman."],[4,"neg","나는 책을 빌릴 필요가 없었다.","I didn't need to borrow a book."],[4,"neg","그는 운동하는 것을 싫어하지 않는다.","He doesn't hate exercising."],[4,"neg","나는 일기 쓰는 것을 좋아하지 않는다.","I don't like writing in my diary."],[4,"neg","그들은 싸우지 않기로 약속했다.","They promised not to fight."],[4,"neg","우리는 TV 보는 것을 그만두지 않았다.","We didn't stop watching TV."],[4,"neg","나는 친구를 돕는 것을 싫어하지 않는다.","I don't mind helping my friends."],[4,"neg","그는 자전거 타는 것을 좋아하지 않는다.","He doesn't like riding a bike."],[4,"neg","우리는 새로운 것을 배우는 것을 싫어하지 않는다.","We don't mind learning new things."],[4,"neg","나는 먹을 것이 필요하지 않다.","I don't need anything to eat."],[4,"neg","그녀는 마실 물을 가져오지 않았다.","She didn't bring any water to drink."],[4,"neg","나는 읽을 책이 없다.","I don't have a book to read."],[4,"neg","그는 다음 주에 여행 가고 싶어 하지 않는다.","He doesn't want to take a trip next week."],[4,"neg","그녀는 눈 오는 날에 밖에 나가고 싶어 하지 않는다.","She doesn't want to go out on snowy days."],[4,"neg","우리는 새 학교에서 친구를 사귀는 것을 두려워하지 않는다.","We aren't afraid of making friends at the new school."],[4,"q","너는 영어를 배우고 싶니?","Do you want to learn English?"],[4,"q","그녀는 의사가 되고 싶어 하니?","Does she want to be a doctor?"],[4,"q","너희는 소풍을 가기로 계획했니?","Did you plan to go on a picnic?"],[4,"q","그는 노래하는 것을 좋아하니?","Does he like singing?"],[4,"q","너는 책 읽는 것을 즐기니?","Do you enjoy reading books?"],[4,"q","그들은 축구하는 것을 좋아하니?","Do they like playing soccer?"],[4,"q","네 꿈은 가수가 되는 것이니?","Is your dream to be a singer?"],[4,"q","그녀는 요리하는 것을 즐기니?","Does she enjoy cooking?"],[4,"q","너는 수영하는 법을 아니?","Do you know how to swim?"],[4,"q","너희는 공원에서 걷는 것을 좋아하니?","Do you like walking in the park?"],[4,"q","그는 숙제를 끝내려고 노력했니?","Did he try to finish his homework?"],[4,"q","너는 그림 그리는 것을 좋아하니?","Do you like drawing pictures?"],[4,"q","엄마는 저녁을 만들기 시작하셨니?","Did your mother start to cook dinner?"],[4,"q","비가 내리기 시작했니?","Did it begin to rain?"],[4,"q","그녀는 춤추기를 멈췄니?","Did she stop dancing?"],[4,"q","너는 일찍 일어나려고 노력하니?","Do you try to get up early?"],[4,"q","너희는 영어로 말하는 연습을 하니?","Do you practice speaking English?"],[4,"q","그는 새 자전거를 사기로 결정했니?","Did he decide to buy a new bike?"],[4,"q","너는 오늘 밤 숙제를 해야 하니?","Do you need to do your homework tonight?"],[4,"q","그녀는 친구들과 이야기하는 것을 좋아하니?","Does she like talking with her friends?"],[4,"q","너희는 박물관에 가고 싶니?","Do you want to visit the museum?"],[4,"q","너는 책을 가져오는 것을 잊었니?","Did you forget to bring your book?"],[4,"q","그는 사진 찍는 것을 즐기니?","Does he enjoy taking pictures?"],[4,"q","너는 내일 일찍 일어나야 하니?","Do you have to get up early tomorrow?"],[4,"q","그녀는 피아노 치는 것을 좋아하니?","Does she like playing the piano?"],[4,"q","너희는 눈사람을 만들고 싶었니?","Did you want to make a snowman?"],[4,"q","너는 책을 빌리려고 도서관에 갔니?","Did you go to the library to borrow a book?"],[4,"q","그는 건강해지려고 운동하니?","Does he exercise to stay healthy?"],[4,"q","너는 일기 쓰는 것을 좋아하니?","Do you like writing in your diary?"],[4,"q","그들은 함께 공부하기로 약속했니?","Did they promise to study together?"],[4,"q","너희는 TV 보는 것을 그만뒀니?","Did you stop watching TV?"],[4,"q","너는 친구를 돕는 것을 좋아하니?","Do you like helping your friends?"],[4,"q","그는 자전거 타는 것을 좋아하니?","Does he like riding a bike?"],[4,"q","너희는 새로운 것을 배우는 것을 즐기니?","Do you enjoy learning new things?"],[4,"q","너는 먹을 것이 필요하니?","Do you need something to eat?"],[4,"q","그녀는 마실 물을 가져왔니?","Did she bring some water to drink?"],[4,"q","너는 읽을 책이 있니?","Do you have a book to read?"],[4,"q","그는 다음 주에 여행 가고 싶어 하니?","Does he want to take a trip next week?"],[4,"q","너는 무엇을 하고 싶니?","What do you want to do?"],[4,"q","너는 커서 무엇이 되고 싶니?","What do you want to be?"]]; // [단계, 유형, 한국어, 영어]
+const SEED_FLAG_KEY = "sentenceArrangeGameSeeded_v1";
 const SENTENCE_STORAGE_KEY = "sentenceArrangeGameBank_v1";
 const MAX_SENTENCES = 3000;
 
@@ -508,7 +584,10 @@ function genId(){ return 's' + Date.now().toString(36) + Math.random().toString(
 function loadSentences(){
   try{
     const raw = JSON.parse(localStorage.getItem(SENTENCE_STORAGE_KEY) || "[]");
-    return Array.isArray(raw) ? raw.filter(s => s && typeof s.kr==="string" && typeof s.en==="string" && ["pos","neg","q"].includes(s.type)) : [];
+    return Array.isArray(raw)
+      ? raw.filter(s => s && typeof s.kr==="string" && typeof s.en==="string" && ["pos","neg","q"].includes(s.type))
+           .map(s => ({...s, stage: normStage(s.stage)}))
+      : [];
   }catch{ return []; }
 }
 function saveSentences(){
@@ -516,15 +595,16 @@ function saveSentences(){
   catch(e){ console.warn("[문장배열] 저장 실패:", e); }
 }
 let CUSTOM_SENTENCES = loadSentences();
+maybeSeedDefaults();
 window.CUSTOM_SENTENCES_REF = CUSTOM_SENTENCES; // QA용 참조(아래에서 재할당 시 함께 갱신)
 
-function addSentence(kr, en, type){
+function addSentence(kr, en, type, stage){
   kr = String(kr||"").trim();
   en = String(en||"").trim();
   if(!kr || !en) return {ok:false, reason:"뜻과 문장을 모두 입력해 주세요."};
   if(CUSTOM_SENTENCES.length >= MAX_SENTENCES) return {ok:false, reason:`최대 ${MAX_SENTENCES}개까지 저장할 수 있어요.`};
   if(!["pos","neg","q"].includes(type)) type = guessType(en);
-  const entry = {id:genId(), kr, en, type};
+  const entry = {id:genId(), kr, en, type, stage:normStage(stage)};
   CUSTOM_SENTENCES.push(entry);
   saveSentences();
   return {ok:true, entry};
@@ -547,14 +627,37 @@ function bulkAddSentences(text){
     const parts = lines[i].split("|").map(p=>p.trim());
     const kr = parts[0], en = parts[1];
     let type = (parts[2]||"").toLowerCase();
+    const stage = normStage(parts[3]);
     if(!kr || !en){ skippedInvalid++; continue; }
     if(!["pos","neg","q"].includes(type)) type = guessType(en);
-    if(CUSTOM_SENTENCES.some(s=>s.kr===kr && s.en===en)){ skippedDup++; continue; }
-    CUSTOM_SENTENCES.push({id:genId(), kr, en, type});
+    const same = CUSTOM_SENTENCES.find(s=>s.kr===kr && s.en===en);
+    if(same){ if(!same.stage && stage) same.stage = stage; skippedDup++; continue; }
+    CUSTOM_SENTENCES.push({id:genId(), kr, en, type, stage});
     added++;
   }
   saveSentences();
   return {added, skippedDup, skippedInvalid, skippedCap};
+}
+
+/* 기본 문장(480개)을 모음집에 넣습니다. 이미 있는 문장은 건너뛰고 단계만 채워 줘요. */
+function loadDefaultSentences(){
+  let added=0, updated=0, skippedCap=0;
+  for(const [stage, type, kr, en] of DEFAULT_SENTENCES){
+    const same = CUSTOM_SENTENCES.find(s=>s.en===en);
+    if(same){ if(!same.stage){ same.stage = stage; updated++; } continue; }
+    if(CUSTOM_SENTENCES.length >= MAX_SENTENCES){ skippedCap++; continue; }
+    CUSTOM_SENTENCES.push({id:genId(), kr, en, type, stage});
+    added++;
+  }
+  saveSentences();
+  return {added, updated, skippedCap};
+}
+function maybeSeedDefaults(){
+  try{
+    if(localStorage.getItem(SEED_FLAG_KEY)) return;
+    localStorage.setItem(SEED_FLAG_KEY, "1");
+  }catch{ return; }
+  if(CUSTOM_SENTENCES.length === 0) loadDefaultSentences();
 }
 
 function deleteSentence(id){
@@ -579,13 +682,14 @@ const BANK_RENDER_CAP = 150;
 function renderBankList(){
   const q = $("bankSearch").value.trim().toLowerCase();
   const types = [...document.querySelectorAll('#bankFilterType input:checked')].map(x=>x.value);
-  const filtered = CUSTOM_SENTENCES.filter(s => types.includes(s.type) && (!q || s.kr.toLowerCase().includes(q) || s.en.toLowerCase().includes(q)));
+  const stages = [...document.querySelectorAll('#bankFilterStage input:checked')].map(x=>Number(x.value));
+  const filtered = CUSTOM_SENTENCES.filter(s => types.includes(s.type) && stages.includes(s.stage||0) && (!q || s.kr.toLowerCase().includes(q) || s.en.toLowerCase().includes(q)));
   const total = filtered.length;
   const shown = filtered.slice(-BANK_RENDER_CAP).reverse();
 
   $("bankList").innerHTML = shown.length ? shown.map(s=>`
     <div class="bank-row">
-      <span class="bank-type-badge ${s.type}">${TYPE_LABEL[s.type]}</span>
+      <span class="bank-badges"><span class="bank-type-badge ${s.type}">${TYPE_LABEL[s.type]}</span>${s.stage ? `<span class="bank-stage-badge">${STAGE_SHORT[s.stage]}</span>` : ""}</span>
       <span class="bank-text"><b>${escapeHtml(s.kr)}</b><br><span class="bank-en">${escapeHtml(s.en)}</span></span>
       <button class="bank-del" type="button" data-id="${s.id}" title="삭제">×</button>
     </div>
@@ -603,6 +707,10 @@ function updateBankCount(){
   const counts = {pos:0, neg:0, q:0};
   CUSTOM_SENTENCES.forEach(s=>{ if(counts[s.type]!==undefined) counts[s.type]++; });
   $("bankTypeCounts").textContent = `긍정 ${counts.pos}개 · 부정 ${counts.neg}개 · 의문 ${counts.q}개`;
+  const sc = {0:0,1:0,2:0,3:0,4:0};
+  CUSTOM_SENTENCES.forEach(s=>{ sc[s.stage||0]++; });
+  document.querySelectorAll("[data-stage-count]").forEach(el=>{ el.textContent = sc[el.dataset.stageCount]; });
+  updatePoolHint();
 }
 
 /* ============================================================
@@ -628,6 +736,7 @@ const state = {
   timerId:null, timerEnd:0, timeLeft:30,
   overallTimerId:null, overallEnd:0, overallTimeLeft:0, pausedOverallLeft:0,
   isPaused:false, pausedTimeLeft:0,
+  teamMode:false, teams:[], teamScore:[], turnCount:0, currentTeam:0,
   soundOn:true, audio:null, gameOver:false, checking:false
 };
 // QA/자동 테스트용 디버그 참조 (민감 정보 없음, 게임 동작에는 영향 없음)
@@ -654,25 +763,117 @@ function beep(freq=600, dur=0.09, vol=0.1){
 /* ============================================================
    설정 화면
    ============================================================ */
+function isTeamMode(){ return document.querySelector('input[name="teamMode"]:checked').value === "team"; }
+function teamAssignMode(){ return document.querySelector('input[name="teamAssign"]:checked').value; }
+let teamOfPlayer = [];   // 학생별 팀 번호(0부터)
+
+function evenAssign(count, tc){ return Array.from({length:count}, (_,i)=> i % tc); }
+function randomAssign(count, tc){
+  const order = shuffle([...Array(count).keys()]);
+  const res = Array(count).fill(0);
+  order.forEach((p,k)=>{ res[p] = k % tc; });
+  return res;
+}
+function currentTeamCount(){
+  const count = Number($("playerCount").value);
+  return Math.max(1, Math.min(Number($("teamCount").value), count));
+}
+
 function renderPlayersInput(){
   const count = Number($("playerCount").value);
+  const team = isTeamMode();
+  const tc = currentTeamCount();
   const old = [...document.querySelectorAll(".pname")].map(x=>x.value);
+
+  // 팀 배정이 없거나 범위를 벗어나면 새로 만든다
+  if(team){
+    const bad = teamOfPlayer.length !== count || teamOfPlayer.some(t => t >= tc);
+    if(bad) teamOfPlayer = teamAssignMode()==="random" ? randomAssign(count, tc) : evenAssign(count, tc);
+  }
+
   $("playerList").innerHTML = "";
   for(let i=0;i<count;i++){
     const row = document.createElement("div");
-    row.className = "player-row";
-    row.innerHTML = `<span class="badge">${i+1}</span><input class="pname" value="${escapeHtml(old[i]||`플레이어 ${i+1}`)}" maxlength="12">`;
+    row.className = "player-row" + (team ? " has-team" : "");
+    const teamSel = team
+      ? `<select class="team-select" data-idx="${i}" ${teamAssignMode()==="random" ? "disabled" : ""} aria-label="${i+1}번 학생의 팀">${
+          Array.from({length:tc}, (_,t)=>`<option value="${t}" ${teamOfPlayer[i]===t?"selected":""}>${escapeHtml(teamNameAt(t))}</option>`).join("")
+        }</select>`
+      : "";
+    row.innerHTML = `<span class="badge">${i+1}</span><input class="pname" value="${escapeHtml(old[i]||`플레이어 ${i+1}`)}" maxlength="12">${teamSel}`;
     $("playerList").appendChild(row);
   }
+  document.querySelectorAll(".team-select").forEach(sel=>{
+    sel.addEventListener("change", ()=>{ teamOfPlayer[Number(sel.dataset.idx)] = Number(sel.value); updateTeamHint(); });
+  });
+  updateTeamHint();
 }
-$("playerCount").addEventListener("change", renderPlayersInput);
+
+function teamNameAt(t){
+  const el = document.querySelectorAll(".tname")[t];
+  return (el && el.value.trim()) || `${t+1}팀`;
+}
+function renderTeamNames(){
+  const tc = currentTeamCount();
+  const old = [...document.querySelectorAll(".tname")].map(x=>x.value);
+  $("teamNames").innerHTML = "";
+  for(let t=0;t<tc;t++){
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `<label for="tname${t}">팀 ${t+1} 이름</label><input id="tname${t}" class="tname" value="${escapeHtml(old[t]||`${t+1}팀`)}" maxlength="8">`;
+    $("teamNames").appendChild(wrap);
+  }
+  document.querySelectorAll(".tname").forEach(inp=> inp.addEventListener("input", refreshTeamLabels));
+}
+function refreshTeamLabels(){
+  // 팀 이름을 바꾸면 각 학생 옆 선택 목록의 글자도 함께 바꾼다
+  document.querySelectorAll(".team-select").forEach(sel=>{
+    [...sel.options].forEach((opt,t)=>{ opt.textContent = teamNameAt(t); });
+  });
+  updateTeamHint();
+}
+function updateTeamHint(){
+  const hint = $("teamHint");
+  if(!isTeamMode()){ hint.textContent = ""; return; }
+  const tc = currentTeamCount();
+  const sizes = Array(tc).fill(0);
+  teamOfPlayer.forEach(t=>{ if(sizes[t]!==undefined) sizes[t]++; });
+  const sizeText = sizes.map((n,t)=>`${teamNameAt(t)} ${n}명`).join(" · ");
+  const empty = sizes.some(n=>n===0);
+  hint.textContent = (teamAssignMode()==="random"
+      ? "랜덤으로 나눈 결과예요. 바꾸고 싶으면 '팀 다시 섞기'를 누르세요. "
+      : "학생 이름 옆에서 팀을 골라 주세요. ")
+    + sizeText + (empty ? " · 비어 있는 팀이 있어요." : "");
+}
+function updateTeamModeUI(){
+  const team = isTeamMode();
+  $("teamSettings").style.display = team ? "" : "none";
+  if(team){
+    if(Number($("playerCount").value) < 2){ $("playerCount").value = "2"; }
+    teamOfPlayer = [];            // 새로 배정
+    renderTeamNames();
+  }
+  renderPlayersInput();
+}
+function reshuffleTeams(){
+  teamOfPlayer = randomAssign(Number($("playerCount").value), currentTeamCount());
+  renderPlayersInput();
+}
+
+$("playerCount").addEventListener("change", ()=>{ teamOfPlayer = []; if(isTeamMode()) renderTeamNames(); renderPlayersInput(); });
+document.querySelectorAll('input[name="teamMode"]').forEach(r => r.addEventListener("change", updateTeamModeUI));
+$("teamCount").addEventListener("change", ()=>{ teamOfPlayer = []; renderTeamNames(); renderPlayersInput(); });
+document.querySelectorAll('input[name="teamAssign"]').forEach(r => r.addEventListener("change", ()=>{
+  if(teamAssignMode()==="random") teamOfPlayer = randomAssign(Number($("playerCount").value), currentTeamCount());
+  renderPlayersInput();
+}));
+$("shuffleTeamsBtn").addEventListener("click", reshuffleTeams);
 renderPlayersInput();
 
 /* ============================================================
    문장 모음집 UI 바인딩
    ============================================================ */
 $("addSentenceBtn").addEventListener("click", ()=>{
-  const res = addSentence($("addKr").value, $("addEn").value, $("addType").value);
+  const res = addSentence($("addKr").value, $("addEn").value, $("addType").value, $("addStage").value);
   if(!res.ok){ alert(res.reason); return; }
   $("addKr").value = ""; $("addEn").value = "";
   $("addKr").focus();
@@ -693,6 +894,28 @@ $("bulkAddBtn").addEventListener("click", ()=>{
 });
 $("bankSearch").addEventListener("input", renderBankList);
 document.querySelectorAll('#bankFilterType input').forEach(cb => cb.addEventListener("change", renderBankList));
+document.querySelectorAll('#bankFilterStage input').forEach(cb => cb.addEventListener("change", renderBankList));
+$("loadDefaultsBtn").addEventListener("click", ()=>{
+  if(!confirm("기본 문장 480개(1~4단계 각 120개)를 문장 모음집에 넣을까요?\n이미 들어 있는 문장은 건너뛰어요.")) return;
+  const r = loadDefaultSentences();
+  let msg = `${r.added}개를 새로 넣었어요.`;
+  if(r.updated) msg += `\n이미 있던 문장 ${r.updated}개에는 단계를 채웠어요.`;
+  if(r.skippedCap) msg += `\n저장 한도(${MAX_SENTENCES}개) 때문에 ${r.skippedCap}개는 넣지 못했어요.`;
+  alert(msg);
+  updateBankCount(); renderBankList();
+});
+document.querySelectorAll('#typeChoice input, #stageChoice input').forEach(cb => cb.addEventListener("change", updatePoolHint));
+
+function selectedPool(){
+  const types = [...document.querySelectorAll('#typeChoice input:checked')].map(x=>x.value);
+  const stages = [...document.querySelectorAll('#stageChoice input:checked')].map(x=>Number(x.value));
+  return CUSTOM_SENTENCES.filter(s => types.includes(s.type) && stages.includes(s.stage||0));
+}
+function updatePoolHint(){
+  const el = $("poolHint"); if(!el) return;
+  const n = selectedPool().length;
+  el.textContent = n ? `지금 조건(유형·단계)에 맞는 문장은 ${n}개예요.` : "지금 조건에 맞는 문장이 없어요. 유형이나 단계를 더 선택해 주세요.";
+}
 $("clearAllBtn").addEventListener("click", clearAllSentences);
 updateBankCount();
 renderBankList();
@@ -735,16 +958,36 @@ function startGame(){
   state.types = [...document.querySelectorAll('#typeChoice input:checked')].map(x=>x.value);
   if(!state.types.length){ state.types = ["pos","neg","q"]; }
 
-  state.pool = CUSTOM_SENTENCES.filter(s => state.types.includes(s.type));
+  const stages = [...document.querySelectorAll('#stageChoice input:checked')].map(x=>Number(x.value));
+  if(!stages.length){ alert("출제할 단계를 하나 이상 선택해 주세요."); return; }
+
+  state.pool = CUSTOM_SENTENCES.filter(s => state.types.includes(s.type) && stages.includes(s.stage||0));
   if(state.pool.length === 0){
-    alert("선택한 유형에 해당하는 문장이 없어요. 먼저 '내 문장 모음집'에서 문장을 추가해 주세요.");
+    alert("선택한 유형·단계에 해당하는 문장이 없어요. 조건을 바꾸거나 '내 문장 모음집'에서 문장을 추가해 주세요.");
     return;
   }
 
   const names = [...document.querySelectorAll(".pname")].map((x,i)=>x.value.trim() || `플레이어 ${i+1}`);
+
+  // 팀 구성 확인
+  let teams = [];
+  if(isTeamMode()){
+    const tc = currentTeamCount();
+    if(names.length < 2 || tc < 2){ alert("팀전은 2명 이상, 2팀 이상으로 해 주세요."); return; }
+    teams = Array.from({length:tc}, (_,t)=>({name:teamNameAt(t), members:[]}));
+    teamOfPlayer.forEach((t,p)=>{ if(teams[t]) teams[t].members.push(p); });
+    if(teams.some(t=>t.members.length===0)){ alert("팀마다 최소 1명은 있어야 해요. 팀을 다시 나눠 주세요."); return; }
+  }
+
   state.players = names;
   state.score = names.map(()=>0);
   state.current = 0;
+  state.teamMode = teams.length > 0;
+  state.teams = teams;
+  state.teamScore = teams.map(()=>0);
+  state.turnCount = 0;
+  state.currentTeam = 0;
+  applyTurn();
 
   state.mode = document.querySelector('input[name="gmode"]:checked').value;
   state.lengthMode = document.querySelector('input[name="lengthMode"]:checked').value;
@@ -834,7 +1077,8 @@ function nextQuestion(){
   state.currentSubmode = pickSubmode();
 
   $("promptKr").textContent = state.currentSentence.kr;
-  $("typeBadge").textContent = TYPE_LABEL[state.currentSentence.type];
+  const stg = state.currentSentence.stage;
+  $("typeBadge").textContent = (stg ? `${STAGE_SHORT[stg]} · ` : "") + TYPE_LABEL[state.currentSentence.type];
   $("progressValue").textContent = state.lengthMode === "overall"
     ? `${state.qIndex}`
     : `${state.qIndex} / ${state.totalQuestions}`;
@@ -868,19 +1112,46 @@ function nextQuestion(){
   }
 }
 
+/* 팀전: n번째 차례의 팀과 학생. 팀이 번갈아 나오고, 팀 안에서는 돌아가며 나와요. */
+function turnInfo(n){
+  const T = state.teams.length;
+  const t = n % T;
+  const m = state.teams[t].members;
+  return {team:t, player:m[Math.floor(n/T) % m.length]};
+}
+function applyTurn(){
+  if(!state.teamMode) return;
+  const info = turnInfo(state.turnCount);
+  state.current = info.player;
+  state.currentTeam = info.team;
+}
+
 function renderTurn(){
+  if(state.teamMode){
+    $("currentPlayer").textContent = `${state.teams[state.currentTeam].name} · ${state.players[state.current]}`;
+    const nx = turnInfo(state.turnCount + 1);
+    $("nextUpHint").textContent = `다음: ${state.teams[nx.team].name} · ${state.players[nx.player]}`;
+    return;
+  }
   $("currentPlayer").textContent = state.players[state.current];
   const nextIdx = (state.current + 1) % state.players.length;
   $("nextUpHint").textContent = state.players.length > 1 ? `다음: ${state.players[nextIdx]}` : "";
 }
 
 function renderScoreStrip(){
+  if(state.teamMode){
+    $("scoreStrip").innerHTML = state.teams.map((t,i)=>
+      `<span class="score-chip ${i===state.currentTeam?'current':''}">${escapeHtml(t.name)}<span class="members">${t.members.map(p=>escapeHtml(state.players[p])).join(", ")}</span><span class="pts">${state.teamScore[i]}점</span></span>`
+    ).join("");
+    return;
+  }
   $("scoreStrip").innerHTML = state.players.map((name,i)=>
     `<span class="score-chip ${i===state.current?'current':''}">${escapeHtml(name)}<span class="pts">${state.score[i]}점</span></span>`
   ).join("");
 }
 
 function advanceTurn(){
+  if(state.teamMode){ state.turnCount++; applyTurn(); return; }
   state.current = (state.current + 1) % state.players.length;
 }
 
@@ -1116,6 +1387,7 @@ function handleResult(correct){
 
   if(correct){
     state.score[state.current]++;
+    if(state.teamMode) state.teamScore[state.currentTeam]++;
     showMessage("정답이에요!", "success");
     beep(880,.1,.1);
   } else {
@@ -1166,18 +1438,34 @@ function finishGame(){
   state.gameOver = true;
   stopTimer();
   stopOverallTimer();
-  const maxScore = Math.max(...state.score);
-  const ranking = state.players.map((name,i)=>({name, score:state.score[i]}))
-    .sort((a,b)=>b.score-a.score);
 
-  $("resultTitle").textContent = maxScore>0 ? "게임 종료" : "게임 종료!";
-  $("finalList").innerHTML = ranking.map((p,i)=>
+  const soloRows = (list, maxScore) => list.map((p,i)=>
     `<div class="final-row ${p.score===maxScore && maxScore>0 ? 'winner':''}">
        <span class="rank">${i+1}</span>
        <span>${escapeHtml(p.name)}</span>
        <span class="pts">${p.score}점</span>
-     </div>`
-  ).join("");
+     </div>`).join("");
+
+  const indiv = state.players.map((name,i)=>({name, score:state.score[i]})).sort((a,b)=>b.score-a.score);
+
+  if(state.teamMode){
+    const maxTeam = Math.max(...state.teamScore);
+    const ranking = state.teams.map((t,i)=>({name:t.name, score:state.teamScore[i],
+        members:t.members.map(p=>`${state.players[p]} ${state.score[p]}점`).join(" · ")}))
+      .sort((a,b)=>b.score-a.score);
+    $("resultTitle").textContent = maxTeam>0 ? "팀전 결과" : "게임 종료";
+    $("finalList").innerHTML = ranking.map((p,i)=>
+      `<div class="final-row team-row ${p.score===maxTeam && maxTeam>0 ? 'winner':''}">
+         <span class="rank">${i+1}</span>
+         <span>${escapeHtml(p.name)}<span class="members">${escapeHtml(p.members)}</span></span>
+         <span class="pts">${p.score}점</span>
+       </div>`).join("")
+      + `<div class="final-sub">개인 기록</div>` + soloRows(indiv, Math.max(...state.score));
+  } else {
+    const maxScore = Math.max(...state.score);
+    $("resultTitle").textContent = maxScore>0 ? "게임 종료" : "게임 종료!";
+    $("finalList").innerHTML = soloRows(indiv, maxScore);
+  }
   $("resultOverlay").classList.add("show");
 }
 
